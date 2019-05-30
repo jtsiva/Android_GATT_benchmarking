@@ -281,20 +281,14 @@ public class GattServer {
 
             //We don't need to do anything but acknowledge since we aren't setting any chars
             Log.i(TAG, "Received: " + String.valueOf(value));
+            mUpdater.updateText("> " + String.valueOf(value));
 
             if (responseNeeded) {
+                byte [] response = mBenchmarkProfile.handleMsg(value).clone();
                 //Presumably the client's onCharacteristicWrite only gets called on receipt of
                 //an acknowledgement
                 mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
-            } else {
-                if (!mBenchmarkProfile.timerStarted()) {
-                    mBenchmarkProfile.startTiming();
-                } else {
-                    mBenchmarkProfile.recordTimeDiff();
-                }
             }
-
-            mUpdater.updateText("> " + String.valueOf(value));
 
         }
 

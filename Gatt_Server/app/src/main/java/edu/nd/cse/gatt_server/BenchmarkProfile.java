@@ -71,9 +71,23 @@ public class BenchmarkProfile {
     }
 
     /**
+     * Handle received message by collecting time stamps
+     * @param buffer - received data. In this profile, we don't care
+     * @return a response to the received data, null in this case
+     */
+    public byte [] handleMsg(byte [] buffer) {
+        if (!this.timerStarted()) {
+            this.startTiming();
+        } else {
+            this.recordTimeDiff();
+        }
+        return null;
+    }
+
+    /**
      * Grab the time stamp so that we can track the duration of an event
      */
-    public void startTiming() {
+    private void startTiming() {
         mStartTS = SystemClock.elapsedRealtimeNanos();
     }
 
@@ -81,14 +95,14 @@ public class BenchmarkProfile {
      *
      * @return true if the timer has been started, false otherwise
      */
-    public boolean timerStarted() { return !(0 == mStartTS); }
+    private boolean timerStarted() { return !(0 == mStartTS); }
 
     /**
      * Record the time difference from when startTiming() was called. If we
      * have filled the array then write the array to a file (if the file has
      * been set).
      */
-    public void recordTimeDiff() {
+    private void recordTimeDiff() {
         long ts = SystemClock.elapsedRealtimeNanos();
         long diff = 0;
 
