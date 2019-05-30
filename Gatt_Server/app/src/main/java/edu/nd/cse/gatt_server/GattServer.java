@@ -54,7 +54,13 @@ public class GattServer {
     private UiUpdate mUpdater = null;
 
 
-
+    /**
+     * Constructor - set up the benchmark profile, open the time stamp file,
+     * get a {@link BlutoothManager}, and check if we have the necessary
+     * Bluetooth support
+     * @param context - application context
+     * @param updater - callback function used to update the UI
+     */
     public GattServer(Context context, UiUpdate updater) {
         mAppContext = context;
         mBenchmarkProfile = new BenchmarkProfile();
@@ -73,6 +79,10 @@ public class GattServer {
         }
     }
 
+    /**
+     * Set up a broadcast listener for adapter state, enable the Bluetooth
+     * adapter if it is not already or start advertising and the GATT server.
+     */
     public void start() {
         // Register for system Bluetooth events
         IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
@@ -88,6 +98,10 @@ public class GattServer {
         }
     }
 
+    /**
+     * Stop the GATT server and stop advertising. Unregister broadcast
+     * receiver
+     */
     public void stop(){
         BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
         if (bluetoothAdapter.isEnabled()) {
@@ -145,7 +159,7 @@ public class GattServer {
 
     /**
      * Begin advertising over Bluetooth that this device is connectable
-     * and supports the Current Time Service.
+     * and supports the Benchmark Service
      */
     private void startAdvertising() {
         BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
@@ -185,7 +199,7 @@ public class GattServer {
 
     /**
      * Initialize the GATT server instance with the services/characteristics
-     * from the Time Profile.
+     * from the Benchmark Profile.
      */
     private void startServer() {
         mBluetoothGattServer = mBluetoothManager.openGattServer(mAppContext, mGattServerCallback);
@@ -228,7 +242,13 @@ public class GattServer {
      * All read/write requests for characteristics and descriptors are handled here.
      */
     private BluetoothGattServerCallback mGattServerCallback = new BluetoothGattServerCallback() {
-
+        /**
+         * As a server that only reacts to requests, we do not need to do anything
+         * upon connection
+         * @param device
+         * @param status
+         * @param newState
+         */
         @Override
         public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
@@ -238,6 +258,17 @@ public class GattServer {
             }
         }
 
+        /**
+         * Receive data from GATT client, start timing or record time diff, and pass
+         * received data up to UI
+         * @param device
+         * @param requestId
+         * @param characteristic
+         * @param preparedWrite
+         * @param responseNeeded
+         * @param offset
+         * @param value
+         */
         @Override
         public void onCharacteristicWriteRequest(BluetoothDevice device,
                                                  int requestId,
@@ -253,7 +284,7 @@ public class GattServer {
             Log.i(TAG, "Received: " + String.valueOf(value));
 
             if (responseNeeded) {
-                //Presumably the client's onCharacteristicWrite only gets cold on receipt of
+                //Presumably the client's onCharacteristicWrite only gets called on receipt of
                 //an acknowledgement
                 mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
             } else {

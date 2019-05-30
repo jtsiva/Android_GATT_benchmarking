@@ -6,6 +6,10 @@ import android.view.WindowManager;
 import android.widget.TextView;
 import android.os.Bundle;
 
+/**
+ * Activity that runs the gatt server. Receives operating parameters
+ * and passes to server.
+ */
 public class GattServerActivity extends Activity implements UiUpdate{
 
     /* UI elements */

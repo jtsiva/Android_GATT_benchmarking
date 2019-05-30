@@ -110,17 +110,26 @@ public class BenchmarkProfile {
 
     }
 
+    /**
+     * Use to write any data collected to a file. This is a clean up function
+     * that is intended to be called before the application closes.
+     */
     public void finish() {
         if (mDiffsIndex > 0) {
             String[] tmp = new String[mDiffsIndex];
             System.arraycopy(mTimeDiffs, 0, tmp, 0, mDiffsIndex);
             String out = TextUtils.join("\n", tmp);
-            bgThread = new Thread(new SaveToFileRunnable(mTimeDiffsFile, out.getBytes(), true));
-            bgThread.start();
-            try {
-                bgThread.join();
-            } catch (InterruptedException ex) {
-                //nothing--move along
+
+            if (null == mTimeDiffsFile) {
+                Log.w (TAG, "Trying to record times when no output file specified!");
+            } else {
+                bgThread = new Thread(new SaveToFileRunnable(mTimeDiffsFile, out.getBytes(), true));
+                bgThread.start();
+                try {
+                    bgThread.join();
+                } catch (InterruptedException ex) {
+                    //nothing--move along
+                }
             }
         }
     }
