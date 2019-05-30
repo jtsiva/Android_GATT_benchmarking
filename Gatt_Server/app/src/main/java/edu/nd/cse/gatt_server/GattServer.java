@@ -47,7 +47,6 @@ public class GattServer {
 
     private Context mAppContext = null;
     private BenchmarkProfile mBenchmarkProfile = null;
-    private boolean mTimerStarted = false;
 
 
     /* Interact with UI */
@@ -288,9 +287,8 @@ public class GattServer {
                 //an acknowledgement
                 mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
             } else {
-                if (!mTimerStarted) {
+                if (!mBenchmarkProfile.timerStarted()) {
                     mBenchmarkProfile.startTiming();
-                    mTimerStarted = true;
                 } else {
                     mBenchmarkProfile.recordTimeDiff();
                 }

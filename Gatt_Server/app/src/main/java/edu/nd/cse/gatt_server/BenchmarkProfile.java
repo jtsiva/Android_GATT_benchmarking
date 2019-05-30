@@ -78,6 +78,12 @@ public class BenchmarkProfile {
     }
 
     /**
+     *
+     * @return true if the timer has been started, false otherwise
+     */
+    public boolean timerStarted() { return !(0 == mStartTS); }
+
+    /**
      * Record the time difference from when startTiming() was called. If we
      * have filled the array then write the array to a file (if the file has
      * been set).
