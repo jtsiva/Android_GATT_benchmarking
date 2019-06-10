@@ -15,8 +15,7 @@ public class BenchmarkClient extends Activity{
     private TextView mParameters;
     private TextView mUpdates;
 
-    /* Gatt related things */
-    private GattClient mGattClient;
+    /* Profile related things */
     private BenchmarkProfileClient mBenchmarkProfileClient;
 
     @Override
@@ -42,8 +41,6 @@ public class BenchmarkClient extends Activity{
 
 
         mUpdates = (TextView) findViewById(R.id.updates);
-
-        mGattClient = new GattClient(this, this);
 
         // Devices with a display should not go to sleep
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
