@@ -18,7 +18,6 @@ public class BenchmarkClient extends Activity{
     /* Profile related things */
     private BenchmarkProfileClient mBenchmarkProfileClient;
 
-    @Override
     public void updateText (final String text) {
         runOnUiThread(new Runnable() {
             @Override
@@ -44,15 +43,10 @@ public class BenchmarkClient extends Activity{
 
         // Devices with a display should not go to sleep
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        //Now that we're all set up, let's start the server and start
-        //advertising
-        mGattClient.start();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mGattServer.stop();
     }
 }

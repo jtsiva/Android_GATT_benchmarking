@@ -1,9 +1,10 @@
-package edu.nd.cse.gatt_client;
+package edu.nd.cse.benchmarkcommon;
+
 import java.util.UUID;
 
 /**
  * This interface is used for passing data back and forth between
- * the BenchmarkProfileClient and the GattClient.
+ * the profile and GATT layers.
  */
 public interface CharacteristicHandler {
 
@@ -15,3 +16,4 @@ public interface CharacteristicHandler {
      */
     public void go (GattData data);
 }
+

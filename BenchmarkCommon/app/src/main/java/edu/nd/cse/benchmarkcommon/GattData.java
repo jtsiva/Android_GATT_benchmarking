@@ -1,4 +1,6 @@
-package edu.nd.cse.gatt_client;
+package edu.nd.cse.benchmarkcommon;
+
+import java.util.UUID;
 
 /**
  * Class to encapsulate the data that is moved between the GATT

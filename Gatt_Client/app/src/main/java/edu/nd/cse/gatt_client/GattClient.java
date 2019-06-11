@@ -1,5 +1,6 @@
 package edu.nd.cse.gatt_client;
 
+import edu.nd.cse.BenchmarkCommon;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
@@ -18,12 +19,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * operations, and interfacing with profile layer
  *
  */
-public class GattClient implements CharacteristicHandler{
+public class GattClient implements BenchmarkCommon.CharacteristicHandler{
     private static final String TAG = BenchmarkClient.class.getSimpleName();
     private Map<String, BluetoothGatt> mConnectedDevices = new HashMap<String, BluetoothGatt>();
-    private final Queue<GattData> mWriteQueue = new ConcurrentLinkedQueue<GattData>();
+    private final Queue<BenchmarkCommon.GattData> mWriteQueue = new ConcurrentLinkedQueue<BenchmarkCommon.GattData>();
     private boolean mIsIdle = true;
-    private UiUpdate mUiUpdate = null;
+    private BenchmarkCommon.UiUpdate mUiUpdate = null;
 
     /**
      *
@@ -38,7 +39,7 @@ public class GattClient implements CharacteristicHandler{
      *
      * @param func
      */
-    public void setUiUpdater (UiUpdate func) {
+    public void setUiUpdater (BenchmarkCommon.UiUpdate func) {
 
     }
 
@@ -46,7 +47,7 @@ public class GattClient implements CharacteristicHandler{
      *
      * @param charHandler
      */
-    public void setHandler (CharacteristicHandler charHandler) {
+    public void setHandler (BenchmarkCommon.CharacteristicHandler charHandler) {
 
     }
 
@@ -55,12 +56,12 @@ public class GattClient implements CharacteristicHandler{
      * @param data
      */
     @Override
-    public void go(GattData data) {
+    public void go(BenchmarkCommon.GattData data) {
         if (null != data) {
             mWriteQueue.put(data);
             if (mIsIdle) {
                 mIsIdle = false;
-                GattData readyData = mWriteQueue.poll();
+                BenchmarkCommon.GattData readyData = mWriteQueue.poll();
                 performOperation(readyData);
             }
         }
@@ -99,7 +100,7 @@ public class GattClient implements CharacteristicHandler{
      *
      * @param data
      */
-    private void performOperation (GattData data) {
+    private void performOperation (BenchmarkCommon.GattData data) {
         //perform operation on characteristic
     }
 
@@ -165,7 +166,7 @@ public class GattClient implements CharacteristicHandler{
                 Log.d(TAG,"Characteristic write FAILED");
             }
 
-            GattData data = mWriteQueue.poll();
+            BenchmarkCommon.GattData data = mWriteQueue.poll();
 
             if (null == data) { //empty!
                 mIsIdle = true;
