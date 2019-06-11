@@ -1,7 +1,10 @@
 package edu.nd.cse.gatt_server;
 
+import edu.nd.cse.BenchmarkCommon;
+
 /* BLE imports */
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothProfile;
@@ -31,42 +34,34 @@ import java.io.File;
  * Class that implements the gatt server that implements all of the callbacks
  * to communicate with a Gatt Client
  */
-public class GattServer {
+public class GattServer extends BluetoothGattServerCallback
+                        implements BenchmarkCommon.CharacteristicHandler {
     private static final String TAG = BenchmarkServer.class.getSimpleName();
 
     /* Bluetooth API */
     private BluetoothManager mBluetoothManager;
     private BluetoothGattServer mBluetoothGattServer;
     private BluetoothLeAdvertiser mBluetoothLeAdvertiser;
+    private BluetoothGattService mBluetoothGattService;
 
     public boolean mHasBTSupport = true;
 
     private byte [] mBuffer = null;
 
     private Context mAppContext = null;
-    private BenchmarkProfile mBenchmarkProfile = null;
-
-
-    /* Interact with UI */
-    private UiUpdate mUpdater = null;
-
 
     /**
      * Constructor - set up the benchmark profile, open the time stamp file,
      * get a {@link BlutoothManager}, and check if we have the necessary
      * Bluetooth support
      * @param context - application context
-     * @param updater - callback function used to update the UI
+     * @param service - service to advertise
      */
-    public GattServer(Context context, UiUpdate updater) {
+    public GattServer(Context context, BluetoothGattService service) {
         mAppContext = context;
-        mBenchmarkProfile = new BenchmarkProfile();
-        File path = mAppContext.getExternalFilesDir(null);
-        mBenchmarkProfile.setTimeStampFile(new File(path, "gatt_cap.txt"));
+        mBluetoothGattService = service;
 
         mBuffer = new byte [512]; //max characteristic size
-
-        mUpdater = updater;
 
         mBluetoothManager = (BluetoothManager) mAppContext.getSystemService(Context.BLUETOOTH_SERVICE);
         BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
@@ -176,7 +171,7 @@ public class GattServer {
         AdvertiseData data = new AdvertiseData.Builder()
                 .setIncludeDeviceName(true)
                 .setIncludeTxPowerLevel(false)
-                .addServiceUuid(new ParcelUuid(BenchmarkProfile.BENCHMARK_SERVICE))
+                .addServiceUuid(new ParcelUuid(BenchmarkProfileServer.BENCHMARK_SERVICE))
                 .build();
 
         mBluetoothLeAdvertiser
@@ -205,9 +200,7 @@ public class GattServer {
             return;
         }
 
-        mBluetoothGattServer.addService(BenchmarkProfile.createBenchmarkService());
-
-        mUpdater.updateText("Gatt Server ready");
+        mBluetoothGattServer.addService(mService);
     }
 
     /**
@@ -234,62 +227,56 @@ public class GattServer {
         }
     };
 
+
     /**
-     * Callback to handle incoming requests to the GATT server.
-     * All read/write requests for characteristics and descriptors are handled here.
+     * As a server that only reacts to requests, we do not need to do anything
+     * upon connection
+     * @param device
+     * @param status
+     * @param newState
      */
-    private BluetoothGattServerCallback mGattServerCallback = new BluetoothGattServerCallback() {
-        /**
-         * As a server that only reacts to requests, we do not need to do anything
-         * upon connection
-         * @param device
-         * @param status
-         * @param newState
-         */
-        @Override
-        public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
-                Log.i(TAG, "BluetoothDevice CONNECTED: " + device);
-            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                Log.i(TAG, "BluetoothDevice DISCONNECTED: " + device);
-            }
+    @Override
+    public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
+        if (newState == BluetoothProfile.STATE_CONNECTED) {
+            Log.i(TAG, "BluetoothDevice CONNECTED: " + device);
+        } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+            Log.i(TAG, "BluetoothDevice DISCONNECTED: " + device);
+        }
+    }
+
+    /**
+     * Receive data from GATT client, start timing or record time diff, and pass
+     * received data up to UI
+     * @param device
+     * @param requestId
+     * @param characteristic
+     * @param preparedWrite
+     * @param responseNeeded
+     * @param offset
+     * @param value
+     */
+    @Override
+    public void onCharacteristicWriteRequest(BluetoothDevice device,
+                                             int requestId,
+                                             BluetoothGattCharacteristic characteristic,
+                                             boolean preparedWrite,
+                                             boolean responseNeeded,
+                                             int offset,
+                                             byte[] value) {
+        super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite,
+                responseNeeded, offset, value);
+
+        //We don't need to do anything but acknowledge since we aren't setting any chars
+        Log.i(TAG, "Received: " + String.valueOf(value));
+
+
+        if (responseNeeded) {
+            byte [] response = mBenchmarkProfile.handleMsg(value).clone();
+            //Presumably the client's onCharacteristicWrite only gets called on receipt of
+            //an acknowledgement
+            mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
         }
 
-        /**
-         * Receive data from GATT client, start timing or record time diff, and pass
-         * received data up to UI
-         * @param device
-         * @param requestId
-         * @param characteristic
-         * @param preparedWrite
-         * @param responseNeeded
-         * @param offset
-         * @param value
-         */
-        @Override
-        public void onCharacteristicWriteRequest(BluetoothDevice device,
-                                                 int requestId,
-                                                 BluetoothGattCharacteristic characteristic,
-                                                 boolean preparedWrite,
-                                                 boolean responseNeeded,
-                                                 int offset,
-                                                 byte[] value) {
-            super.onCharacteristicWriteRequest(device, requestId, characteristic, preparedWrite,
-                    responseNeeded, offset, value);
-
-            //We don't need to do anything but acknowledge since we aren't setting any chars
-            Log.i(TAG, "Received: " + String.valueOf(value));
-            mUpdater.updateText("> " + String.valueOf(value));
-
-            if (responseNeeded) {
-                byte [] response = mBenchmarkProfile.handleMsg(value).clone();
-                //Presumably the client's onCharacteristicWrite only gets called on receipt of
-                //an acknowledgement
-                mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
-            }
-
-        }
-
-    };
+    }
 
 }

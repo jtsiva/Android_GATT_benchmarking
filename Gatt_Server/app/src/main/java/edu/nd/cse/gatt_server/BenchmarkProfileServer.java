@@ -3,22 +3,20 @@ package edu.nd.cse.gatt_server;
 import edu.nd.cse.BenchmarkCommon;
 
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.os.SystemClock;
 import android.text.TextUtils;
-import android.os.HandlerThread;
 import android.util.Log;
 
 import java.io.File;
 import java.util.UUID;
 
 /**
-* Implementation of our benchmark profile which will be used with
+* Implementation of our benchmark profile server which will be used with
 * a corresponding benchmarking client to run BLE benchmarking tests
 * */
-public class BenchmarkProfile {
-    private static final String TAG = BenchmarkProfile.class.getSimpleName();
+public class BenchmarkProfileServer extends BenchmarkCommon.BenchmarkProfile {
+    private static final String TAG = BenchmarkProfileServer.class.getSimpleName();
 
     private String [] mTimeDiffs; //array to hold the delta between packet ends
     private long mStartTS = 0; //timestamp from when we're told to start timing
@@ -27,30 +25,33 @@ public class BenchmarkProfile {
     private File mTimeDiffsFile = null;
     private Thread bgThread = null;
 
-
-    public static final UUID BENCHMARK_SERVICE = UUID.fromString("00000001-0000-1000-8000-00805F9B34FB");
-
-    //This could be used to report the results of the benchmark to the client
-    //NOT USED AS OF NOW
-    public static UUID QUERY_CHAR = UUID.fromString("00000002-0000-1000-8000-00805F9B34FB");
-
-    //The below characterstics will change based what communication method is used
-
-    //GATT client will write to this characteristic
-    public static UUID W_CHAR   = UUID.fromString("00000003-0000-1000-8000-00805F9B34FB");
+    private GattServer mGattServer;
 
     /**
-     * Initialize the time diffs array
+     * Initialize the time diffs array and gatt server
      */
-    public BenchmarkProfile (){
+    public BenchmarkProfileServer(Context context){
+        File path = context.getExternalFilesDir(null);
+        setTimeStampFile(new File(path, "gatt_cap.txt"));
+
         mTimeDiffs = new String[MAX_DIFFS];
+
+        mGattServer = new GattServer (context);
+
+    }
+
+    /**
+     *
+     */
+    public void start() {
+        mGattServer.start();
     }
 
     /**
      * Return a configured {@link BluetoothGattService} instance for the
-     * Current Time Service.
+     *
      */
-    public static BluetoothGattService createBenchmarkService() {
+    private BluetoothGattService createBenchmarkService() {
         BluetoothGattService service = new BluetoothGattService(BENCHMARK_SERVICE,
                 BluetoothGattService.SERVICE_TYPE_PRIMARY);
 
@@ -66,24 +67,10 @@ public class BenchmarkProfile {
      * Set the output file for writing the time diffs
      * @param file - the output file
      */
-    public void setTimeStampFile (File file) {
+    private void setTimeStampFile (File file) {
         mTimeDiffsFile = file;
         bgThread = new Thread(new BenchmarkCommon.SaveToFileRunnable(mTimeDiffsFile, "inter-packet_time\n".getBytes(), false));
         bgThread.start();
-    }
-
-    /**
-     * Handle received message by collecting time stamps
-     * @param buffer - received data. In this profile, we don't care
-     * @return a response to the received data, null in this case
-     */
-    public byte [] handleMsg(byte [] buffer) {
-        if (!this.timerStarted()) {
-            this.startTiming();
-        } else {
-            this.recordTimeDiff();
-        }
-        return null;
     }
 
     /**
@@ -136,7 +123,9 @@ public class BenchmarkProfile {
      * Use to write any data collected to a file. This is a clean up function
      * that is intended to be called before the application closes.
      */
-    public void finish() {
+    public void stop() {
+        mGattServer.stop();
+
         if (mDiffsIndex > 0) {
             String[] tmp = new String[mDiffsIndex];
             System.arraycopy(mTimeDiffs, 0, tmp, 0, mDiffsIndex);

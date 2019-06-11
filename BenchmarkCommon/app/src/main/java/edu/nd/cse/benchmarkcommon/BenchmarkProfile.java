@@ -60,6 +60,8 @@ public class BenchmarkProfile {
     //the results.
 
     //used to stream inter-packet timestamps back to client (string)
+    //characteristic must be made available, but does not need to be implemented
+    //if not implemented simply return a single byte: 0
     public static UUID RAW_DATA_CHAR = UUID.fromString("00000004-0000-1000-8000-00805F9B34FB");
 
     //compute and return the throughput in bits per second (int)
