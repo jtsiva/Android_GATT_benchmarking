@@ -1,6 +1,6 @@
 package edu.nd.cse.gatt_client;
 
-import edu.nd.cse.BenchmarkCommon;
+import edu.nd.cse.benchmarkcommon;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;

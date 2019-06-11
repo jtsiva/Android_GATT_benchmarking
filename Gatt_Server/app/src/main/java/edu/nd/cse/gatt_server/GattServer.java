@@ -78,7 +78,7 @@ public class GattServer extends BluetoothGattServerCallback {
      * @return
      */
     public boolean setCharacteristicHandler(BenchmarkCommon.CharacteristicHandler func) {
-        if (null != fun) {
+        if (null != func) {
             mHandler = func;
             return true;
         }
@@ -192,8 +192,6 @@ public class GattServer extends BluetoothGattServerCallback {
 
         mBluetoothLeAdvertiser
                 .startAdvertising(settings, data, mAdvertiseCallback);
-
-        mUpdater.updateText("Advertising...");
     }
 
     /**
@@ -210,13 +208,13 @@ public class GattServer extends BluetoothGattServerCallback {
      * from the Benchmark Profile.
      */
     private void startServer() {
-        mBluetoothGattServer = mBluetoothManager.openGattServer(mAppContext, mGattServerCallback);
+        mBluetoothGattServer = mBluetoothManager.openGattServer(mAppContext, this);
         if (mBluetoothGattServer == null) {
             Log.w(TAG, "Unable to create GATT server");
             return;
         }
 
-        mBluetoothGattServer.addService(mService);
+        mBluetoothGattServer.addService(mBluetoothGattService);
     }
 
     /**
@@ -285,13 +283,67 @@ public class GattServer extends BluetoothGattServerCallback {
         //We don't need to do anything but acknowledge since we aren't setting any chars
         Log.i(TAG, "Received: " + String.valueOf(value));
 
-        mHandler.handleCharacteristic(new GattData (/*address, char UUID, bytes*/));
+        //callback to hand data up
+        mHandler.handleCharacteristic(new BenchmarkCommon.GattData (device.getAddress(), characteristic.getUuid(), value));
 
         if (responseNeeded) {
-            byte [] response = mBenchmarkProfile.handleMsg(value).clone();
             //Presumably the client's onCharacteristicWrite only gets called on receipt of
             //an acknowledgement
             mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value);
+        }
+
+    }
+
+    /**
+     * First call readies the characteristic which is then provided directly
+     * through the characteristic without further interaction with the profile.
+     * This is done because it means that you don't calculate or ready the
+     * characteristic *every* time there is a change.
+     *
+     *  question: what do you do when you want to read > 512bytes?
+     *  answer: multiple req's which is coordinated by profile
+     *
+     * @param device - the bluetooth device sending the read request
+     * @param requestId  - the ID of the request
+     * @param offset - the desired offset into the characteristic value to read
+     * @param characteristic - the characteristic to which the read is requested
+     */
+    @Override
+    public void onCharacteristicReadRequest(BluetoothDevice device,
+                                            int requestId, int offset,
+                                            BluetoothGattCharacteristic characteristic) {
+        super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
+
+        BenchmarkCommmon.GattDataGattData res = null;
+        if (0 == offset) {
+            //hand off to profile layer to ready the characteristic
+            res = mHandler.handleCharacteristic(new BenchmarkCommmon.GattDataGattData
+                    (device.getAddress(), characteristic.getUuid(), value));
+        }
+
+        //null if the profile has no idea what to do with this request
+        //otherwise res should have the complete response information
+        if (null != res) {
+            int length = characteristic.getValue().length;
+            if (offset > length) {
+                //Log.i("BlueNet", "sending read response end");
+                mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, new byte[]{0});
+                return;
+            }
+
+            int size = length - offset;
+            byte[] response = new byte[size];
+
+            for (int i = offset; i < length; i++) {
+                response[i - offset] = characteristic.getValue()[i];
+            }
+
+            mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, response);
+            return;
+        }
+        else {
+            mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE, 0, null);
+            return;
         }
 
     }

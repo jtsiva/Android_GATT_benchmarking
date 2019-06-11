@@ -13,7 +13,8 @@ public interface CharacteristicHandler {
      * either direction (writes or receives)
      *
      * @param GattData - the data coming from or going to the GATT layer
+     * @return data for response (if needed), null if no response
      */
-    public void handleCharacteristic (GattData data);
+    public GattData handleCharacteristic (GattData data);
 }
 
