@@ -1,5 +1,6 @@
 package edu.nd.cse.gatt_server;
 
+import edu.nd.cse.BenchmarkCommon;
 import android.app.Activity;
 import android.util.Log;
 import android.view.WindowManager;
@@ -10,25 +11,26 @@ import android.os.Bundle;
  * Activity that runs the gatt server. Receives operating parameters
  * and passes to server.
  */
-public class GattServerActivity extends Activity implements UiUpdate{
+public class BenchmarkServer extends Activity{
 
     /* UI elements */
     private TextView mParameters;
     private TextView mUpdates;
+    private BenchmarkCommon.UiUpdate mUpdater = new BenchmarkCommon.UiUpdate () {
+        @Override
+        public void updateText (final String text) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    mUpdates.append(text);
+                    mUpdates.append("\n");
+                }
+            });
+        }
+    };
 
-    /* Gatt related things */
-    private GattServer mGattServer;
 
-    @Override
-    public void updateText (final String text) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mUpdates.append(text);
-                mUpdates.append("\n");
-            }
-        });
-    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,19 +45,15 @@ public class GattServerActivity extends Activity implements UiUpdate{
 
         mUpdates = (TextView) findViewById(R.id.updates);
 
-        mGattServer = new GattServer(this, this);
-
         // Devices with a display should not go to sleep
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        //Now that we're all set up, let's start the server and start
-        //advertising
-        mGattServer.start();
+        //start profile
+
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        mGattServer.stop();
     }
 }

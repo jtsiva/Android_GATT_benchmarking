@@ -8,7 +8,6 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattServer;
 import android.bluetooth.BluetoothGattServerCallback;
-import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.le.AdvertiseCallback;
 import android.bluetooth.le.AdvertiseData;
@@ -21,7 +20,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.ParcelUuid;
 import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
@@ -34,7 +32,7 @@ import java.io.File;
  * to communicate with a Gatt Client
  */
 public class GattServer {
-    private static final String TAG = GattServerActivity.class.getSimpleName();
+    private static final String TAG = BenchmarkServer.class.getSimpleName();
 
     /* Bluetooth API */
     private BluetoothManager mBluetoothManager;

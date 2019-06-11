@@ -1,4 +1,4 @@
-package edu.nd.cse.gatt_server;
+package edu.nd.cse.benchmarkcommon;
 
 import java.io.File;
 import java.io.FileOutputStream;

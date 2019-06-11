@@ -1,5 +1,7 @@
 package edu.nd.cse.gatt_server;
 
+import edu.nd.cse.BenchmarkCommon;
+
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
@@ -66,7 +68,7 @@ public class BenchmarkProfile {
      */
     public void setTimeStampFile (File file) {
         mTimeDiffsFile = file;
-        bgThread = new Thread(new SaveToFileRunnable(mTimeDiffsFile, "inter-packet_time\n".getBytes(), false));
+        bgThread = new Thread(new BenchmarkCommon.SaveToFileRunnable(mTimeDiffsFile, "inter-packet_time\n".getBytes(), false));
         bgThread.start();
     }
 
@@ -120,7 +122,7 @@ public class BenchmarkProfile {
                 if (null == mTimeDiffsFile) {
                     Log.w (TAG, "Trying to record times when no output file specified!");
                 } else {
-                    bgThread = new Thread(new SaveToFileRunnable(mTimeDiffsFile, out.getBytes(), true));
+                    bgThread = new Thread(new BenchmarkCommon.SaveToFileRunnable(mTimeDiffsFile, out.getBytes(), true));
                     bgThread.start();
                 }
 
@@ -143,7 +145,7 @@ public class BenchmarkProfile {
             if (null == mTimeDiffsFile) {
                 Log.w (TAG, "Trying to record times when no output file specified!");
             } else {
-                bgThread = new Thread(new SaveToFileRunnable(mTimeDiffsFile, out.getBytes(), true));
+                bgThread = new Thread(new BenchmarkCommon.SaveToFileRunnable(mTimeDiffsFile, out.getBytes(), true));
                 bgThread.start();
                 try {
                     bgThread.join();
