@@ -34,8 +34,7 @@ import java.io.File;
  * Class that implements the gatt server that implements all of the callbacks
  * to communicate with a Gatt Client
  */
-public class GattServer extends BluetoothGattServerCallback
-                        implements BenchmarkCommon.CharacteristicHandler {
+public class GattServer extends BluetoothGattServerCallback {
     private static final String TAG = BenchmarkServer.class.getSimpleName();
 
     /* Bluetooth API */
@@ -43,6 +42,8 @@ public class GattServer extends BluetoothGattServerCallback
     private BluetoothGattServer mBluetoothGattServer;
     private BluetoothLeAdvertiser mBluetoothLeAdvertiser;
     private BluetoothGattService mBluetoothGattService;
+
+    private BenchmarkCommon.CharacteristicHandler mHandler;
 
     public boolean mHasBTSupport = true;
 
@@ -68,6 +69,21 @@ public class GattServer extends BluetoothGattServerCallback
         // We can't continue without proper Bluetooth support
         if (!checkBluetoothSupport(bluetoothAdapter)) {
             mHasBTSupport = false;
+        }
+    }
+
+    /**
+     * Set the callback for handling incoming data
+     * @param func
+     * @return
+     */
+    public boolean setCharacteristicHandler(BenchmarkCommon.CharacteristicHandler func) {
+        if (null != fun) {
+            mHandler = func;
+            return true;
+        }
+        else {
+            return false;
         }
     }
 
@@ -269,6 +285,7 @@ public class GattServer extends BluetoothGattServerCallback
         //We don't need to do anything but acknowledge since we aren't setting any chars
         Log.i(TAG, "Received: " + String.valueOf(value));
 
+        mHandler.handleCharacteristic(new GattData (/*address, char UUID, bytes*/));
 
         if (responseNeeded) {
             byte [] response = mBenchmarkProfile.handleMsg(value).clone();

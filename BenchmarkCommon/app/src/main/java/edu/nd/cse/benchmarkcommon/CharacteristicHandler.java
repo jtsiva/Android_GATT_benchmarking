@@ -14,6 +14,6 @@ public interface CharacteristicHandler {
      *
      * @param GattData - the data coming from or going to the GATT layer
      */
-    public void go (GattData data);
+    public void handleCharacteristic (GattData data);
 }
 
