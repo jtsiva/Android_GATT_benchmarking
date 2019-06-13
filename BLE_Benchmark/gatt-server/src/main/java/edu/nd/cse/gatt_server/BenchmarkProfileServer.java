@@ -15,6 +15,20 @@ import java.util.UUID;
 /**
 * Implementation of our benchmark profile server which will be used with
 * a corresponding benchmarking client to run BLE benchmarking tests
+*
+* The server side exposes the following functionality to the application:
+* - start the profile
+*   - starts advertising the service and waits for connection
+* - stop the profile
+*   - stop advertising and shutdown the gatt server
+* - stop advertising after connect (x)
+*   - boolean on start function to indicate whether or not to continue
+*     advertising after a connection has been made
+* - log benchmark results to file
+*   - boolean on constructor to indicate whether or not raw timestamps
+ *    should be logged to a file. If not logged to file then the local
+ *    buffer size is increased and treated like a circular buffer with
+ *    a maximum number of entries of 10k (may need to experiment)
 * */
 public class BenchmarkProfileServer extends BenchmarkProfile {
     private static final String TAG = BenchmarkProfileServer.class.getSimpleName();
@@ -30,6 +44,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile {
 
     /**
      * Initialize the time diffs array and gatt server
+     * TODO: add boolean for logging and change logging procedure
      */
     public BenchmarkProfileServer(Context context){
         File path = context.getExternalFilesDir(null);
@@ -42,7 +57,8 @@ public class BenchmarkProfileServer extends BenchmarkProfile {
     }
 
     /**
-     *
+     * Start the gatt server
+     * TODO: add option to stop advertising after connection
      */
     public void start() {
         mGattServer.start();
@@ -91,6 +107,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile {
      * Record the time difference from when startTiming() was called. If we
      * have filled the array then write the array to a file (if the file has
      * been set).
+     * TODO: alter to choose between circular buffer and file
      */
     private void recordTimeDiff() {
         long ts = SystemClock.elapsedRealtimeNanos();
@@ -121,8 +138,9 @@ public class BenchmarkProfileServer extends BenchmarkProfile {
     }
 
     /**
-     * Use to write any data collected to a file. This is a clean up function
-     * that is intended to be called before the application closes.
+     * Stop the gatt server and write any data collected to a file. This is a
+     * clean up function that is intended to be called before the application
+     * closes.
      */
     public void stop() {
         mGattServer.stop();
