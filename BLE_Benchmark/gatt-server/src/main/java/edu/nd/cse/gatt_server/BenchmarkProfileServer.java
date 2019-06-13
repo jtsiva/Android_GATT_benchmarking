@@ -2,6 +2,10 @@ package edu.nd.cse.gatt_server;
 
 import edu.nd.cse.benchmarkcommon.BenchmarkProfile;
 import edu.nd.cse.benchmarkcommon.SaveToFileRunnable;
+import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
+import edu.nd.cse.benchmarkcommon.GattData;
+
+
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.os.SystemClock;
@@ -30,7 +34,8 @@ import java.util.UUID;
  *    buffer size is increased and treated like a circular buffer with
  *    a maximum number of entries of 10k (may need to experiment)
 * */
-public class BenchmarkProfileServer extends BenchmarkProfile {
+public class BenchmarkProfileServer extends BenchmarkProfile
+                                    implements CharacteristicHandler {
     private static final String TAG = BenchmarkProfileServer.class.getSimpleName();
 
     private String [] mTimeDiffs; //array to hold the delta between packet ends
@@ -95,6 +100,71 @@ public class BenchmarkProfileServer extends BenchmarkProfile {
         service.addCharacteristic (writeChar);
 
         return service;
+    }
+
+    /**
+     *
+     * @param data
+     * @return
+     */
+    @Override
+    public GattData handleCharacteristic (GattData data) {
+        GattData response = null;
+        if (BenchmarkProfile.TEST_CHAR.equals(data.mCharID))
+        {
+            response = handleTestCharacteristic(data);
+        }
+        else if (BenchmarkProfile.RAW_DATA_CHAR.equals(data.mCharID)){
+            response = handleRawDataRequest();
+        }
+        else if (BenchmarkProfile.THROUGHPUT_CHAR.equals(data.mCharID)){
+            response = handleThroughputRequest();
+        }
+        else if (BenchmarkProfile.LOSS_RATE_CHAR.equals(data.mCharID)){
+            response = handleLossRateRequest();
+        }
+
+        return response;
+    }
+
+    /**
+     *
+     * @return
+     */
+    private GattData handleTestCharacteristic (GattData data){
+        GattData response = null;
+
+        return response;
+    }
+
+    /**
+     *
+     * @return
+     */
+    private GattData handleRawDataRequest () {
+        GattData response = null;
+
+        return response;
+    }
+
+    /**
+     *
+     * @return
+     */
+    private GattData handleThroughputRequest () {
+        GattData response = null;
+
+        return response;
+    }
+
+    /**
+     *
+     * @return
+     */
+    private GattData handleLossRateRequest () {
+        GattData response = null;
+
+        return response;
     }
 
     /**

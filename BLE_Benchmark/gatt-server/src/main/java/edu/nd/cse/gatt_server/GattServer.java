@@ -45,6 +45,7 @@ public class GattServer extends BluetoothGattServerCallback {
     private BluetoothGattService mBluetoothGattService;
 
     private CharacteristicHandler mHandler;
+    private GattData mCharReadResponse;
 
     public boolean mHasBTSupport = true;
 
@@ -323,16 +324,17 @@ public class GattServer extends BluetoothGattServerCallback {
                                             BluetoothGattCharacteristic characteristic) {
         super.onCharacteristicReadRequest(device, requestId, offset, characteristic);
 
-        GattData res = null;
+
         if (0 == offset) {
+            mCharReadResponse = null;
             //hand off to profile layer to ready the characteristic
-            res = mHandler.handleCharacteristic(new GattData
+            mCharReadResponse = mHandler.handleCharacteristic(new GattData
                     (device.getAddress(), characteristic.getUuid(), null));
         }
 
         //null if the profile has no idea what to do with this request
-        //otherwise res should have the complete response information
-        if (null != res) {
+        //otherwise the response has the complete response information
+        if (null != mCharReadResponse) {
             int length = characteristic.getValue().length;
             if (offset > length) {
                 //Log.i("BlueNet", "sending read response end");
