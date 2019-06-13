@@ -52,6 +52,8 @@ public class GattServer extends BluetoothGattServerCallback {
 
     private Context mAppContext = null;
 
+    private boolean mStopAdvOnConnect = false;
+
     /**
      * Constructor - set up the benchmark profile, open the time stamp file,
      * get a {@link BlutoothManager}, and check if we have the necessary
@@ -91,8 +93,11 @@ public class GattServer extends BluetoothGattServerCallback {
     /**
      * Set up a broadcast listener for adapter state, enable the Bluetooth
      * adapter if it is not already or start advertising and the GATT server.
+     * @param stopAdvOnConnect - boolean to indicate whether to stop
+     *                         advertising once a connection has been made
      */
-    public void start() {
+    public void start(boolean stopAdvOnConnect) {
+        mStopAdvOnConnect = stopAdvOnConnect;
         // Register for system Bluetooth events
         IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         mAppContext.registerReceiver(mBluetoothReceiver, filter);
@@ -254,6 +259,9 @@ public class GattServer extends BluetoothGattServerCallback {
     public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
         if (newState == BluetoothProfile.STATE_CONNECTED) {
             Log.i(TAG, "BluetoothDevice CONNECTED: " + device);
+            if (mStopAdvOnConnect) {
+                stopAdvertising();
+            }
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
             Log.i(TAG, "BluetoothDevice DISCONNECTED: " + device);
         }

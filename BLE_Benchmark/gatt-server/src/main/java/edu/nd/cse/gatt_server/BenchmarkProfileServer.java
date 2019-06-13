@@ -58,10 +58,16 @@ public class BenchmarkProfileServer extends BenchmarkProfile {
 
     /**
      * Start the gatt server
-     * TODO: add option to stop advertising after connection
      */
-    public void start() {
-        mGattServer.start();
+    public void start(boolean stopAdvertising) {
+        mGattServer.start(stopAdvertising);
+    }
+
+    /**
+     * Start the gatt server and don't stop advertising upon connection
+     */
+    public void start () {
+        mGattServer.start(false);
     }
 
     /**
