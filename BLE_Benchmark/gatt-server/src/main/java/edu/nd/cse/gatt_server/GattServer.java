@@ -2,6 +2,7 @@ package edu.nd.cse.gatt_server;
 
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
 import edu.nd.cse.benchmarkcommon.GattData;
+import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
 
 /* BLE imports */
 import android.bluetooth.BluetoothAdapter;
@@ -33,7 +34,9 @@ import java.io.File;
 
 /**
  * Class that implements the gatt server that implements all of the callbacks
- * to communicate with a Gatt Client
+ * to communicate with a Gatt Client. Actual understanding of the incoming or
+ * outgoing information is not included here. At this layer we only deal with
+ * in and out-bound bytes.
  */
 public class GattServer extends BluetoothGattServerCallback {
     private static final String TAG = BenchmarkServer.class.getSimpleName();
@@ -46,6 +49,7 @@ public class GattServer extends BluetoothGattServerCallback {
 
     private CharacteristicHandler mHandler;
     private GattData mCharReadResponse;
+    private ConnectionUpdater mConnUpdater;
 
     public boolean mHasBTSupport = true;
 
@@ -125,6 +129,15 @@ public class GattServer extends BluetoothGattServerCallback {
         }
 
         mAppContext.unregisterReceiver(mBluetoothReceiver);
+    }
+
+    /**
+     * Set the callback to be used for communicating connection
+     * parameter changes up the stack
+     * @param updater - the callback
+     */
+    public void setConnectionUpdateCallback(ConnectionUpdater updater) {
+        mConnUpdater = updater;
     }
 
     /**
@@ -330,6 +343,8 @@ public class GattServer extends BluetoothGattServerCallback {
             //hand off to profile layer to ready the characteristic
             mCharReadResponse = mHandler.handleCharacteristic(new GattData
                     (device.getAddress(), characteristic.getUuid(), null));
+
+            characteristic.setValue(mCharReadResponse.mBuffer);
         }
 
         //null if the profile has no idea what to do with this request

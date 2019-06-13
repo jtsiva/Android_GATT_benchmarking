@@ -4,6 +4,7 @@ import edu.nd.cse.benchmarkcommon.BenchmarkProfile;
 import edu.nd.cse.benchmarkcommon.SaveToFileRunnable;
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
 import edu.nd.cse.benchmarkcommon.GattData;
+import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
 
 
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -15,6 +16,7 @@ import android.content.Context;
 
 import java.io.File;
 import java.util.UUID;
+import java.nio.ByteBuffer;
 
 /**
 * Implementation of our benchmark profile server which will be used with
@@ -42,10 +44,17 @@ public class BenchmarkProfileServer extends BenchmarkProfile
     private long mStartTS = 0; //timestamp from when we're told to start timing
     private int mDiffsIndex = 0;
     private final int MAX_DIFFS = 1000;
+    private long mBytesReceived = 0;
+    private long mPacketsReceived = 0;
+    private int mMtu = 0;
+    private int mConnInterval = 0;
+
     private File mTimeDiffsFile = null;
     private Thread bgThread = null;
 
     private GattServer mGattServer;
+
+    private boolean mLogToFile;
 
     /**
      * Initialize the time diffs array and gatt server
@@ -55,12 +64,25 @@ public class BenchmarkProfileServer extends BenchmarkProfile
      *                  or store them in a circular buffer in mem
      */
     public BenchmarkProfileServer(Context context, boolean logToFile){
-        File path = context.getExternalFilesDir(null);
-        setTimeStampFile(new File(path, "gatt_cap.txt"));
+        mLogToFile = logToFile;
 
-        mTimeDiffs = new String[MAX_DIFFS];
+        if (mLogToFile) {
+            File path = context.getExternalFilesDir(null);
+            setTimeStampFile(new File(path, "gatt_cap.txt"));
+
+            mTimeDiffs = new String[MAX_DIFFS];
+        }
 
         mGattServer = new GattServer (context, createBenchmarkService());
+        mGattServer.setConnectionUpdateCallback(new ConnectionUpdater (){
+            public void mtuUpdate(int mtu) {
+                mMtu = mtu;
+            }
+
+            public void connIntervalUpdate (int interval){
+                mConnInterval = interval;
+            }
+        });
 
     }
 
@@ -88,7 +110,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
 
     /**
      * Return a configured {@link BluetoothGattService} instance for the
-     *
+     * {@link BluetoothGattServer}
      */
     private BluetoothGattService createBenchmarkService() {
         BluetoothGattService service = new BluetoothGattService(BENCHMARK_SERVICE,
@@ -97,15 +119,31 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         BluetoothGattCharacteristic writeChar = new BluetoothGattCharacteristic(BenchmarkProfile.TEST_CHAR,
                 BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_WRITE);
 
+        BluetoothGattCharacteristic rawDataChar = new BluetoothGattCharacteristic(BenchmarkProfile.RAW_DATA_CHAR,
+                BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
+
+        BluetoothGattCharacteristic throughputChar = new BluetoothGattCharacteristic(BenchmarkProfile.THROUGHPUT_CHAR,
+                BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
+
+        BluetoothGattCharacteristic lossRateChar = new BluetoothGattCharacteristic(BenchmarkProfile.LOSS_RATE_CHAR,
+                BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
+
         service.addCharacteristic (writeChar);
+        service.addCharacteristic (rawDataChar);
+        service.addCharacteristic (throughputChar);
+        service.addCharacteristic (lossRateChar);
 
         return service;
     }
 
+
     /**
+     * Callback to be called by GATT layer to handle a characteristic. All the
+     * parsing and interpretation of the data from the GATT layer occurs here.
      *
-     * @param data
-     * @return
+     * @param data - the data from the GATT layer if any (can be null)
+     * @return a response. null if there was a problem with the action on the
+     * characteristic.
      */
     @Override
     public GattData handleCharacteristic (GattData data) {
@@ -128,41 +166,83 @@ public class BenchmarkProfileServer extends BenchmarkProfile
     }
 
     /**
+     * Since the data will be junk, just count the number of bytes received,
+     * increment the number of packets, and record the time
      *
-     * @return
+     * @return data with sender address, char uuid, and null buffer
      */
     private GattData handleTestCharacteristic (GattData data){
         GattData response = null;
 
+        if (null != data && null != data.mBuffer) {
+            mBytesReceived += data.mBuffer.length;
+            mPacketsReceived += 1;
+            if (timerStarted()) {
+                startTiming();
+            }
+            else {
+                recordTimeDiff();
+            }
+
+            response = data;
+            response.mBuffer = null;
+        }
+
         return response;
     }
 
     /**
+     * Streams all of the raw timing data back to caller in netstring format:
+     * [num bytes].[bytes]
+     * This means that it is the caller's responsibility to request more reads
+     * on this characteristic if all bytes have not been received. Here we need
+     * to keep track of how many bytes have been sent and how many still need to
+     * be sent.
      *
-     * @return
+     * NOT IMPLEMENTED
+     *
+     * @return barebones response with only buffer set
      */
     private GattData handleRawDataRequest () {
         GattData response = null;
 
+        //get a new chunk of netstring to send and put in response.mBuffer
+
         return response;
     }
 
     /**
+     * Calculate the bits per second as of the last operation on the
+     * test characteristic
      *
-     * @return
+     * @return barebones response with only buffer set
      */
     private GattData handleThroughputRequest () {
         GattData response = null;
 
+        int lastTimeIndex = (MAX_DIFFS == mDiffsIndex) ? mDiffsIndex - 1 : mDiffsIndex;
+        long bps = (mBytesReceived * 8) / (Long.parseLong(mTimeDiffs[lastTimeIndex]) - mStartTS);
+        if (0 < bps) {
+            bps = 0;
+        }
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putLong(bps);
+        response = new GattData(null, null, buffer.array());
+
         return response;
     }
 
     /**
+     * Calculate the loss rate:
      *
-     * @return
+     * NOT IMPLEMENTED
+     *
+     * @return barebones response with only buffer set
      */
     private GattData handleLossRateRequest () {
         GattData response = null;
+
+        //calculate the loss rate using known information
 
         return response;
     }
