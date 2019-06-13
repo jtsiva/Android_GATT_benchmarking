@@ -45,8 +45,11 @@ public class BenchmarkProfileServer extends BenchmarkProfile {
     /**
      * Initialize the time diffs array and gatt server
      * TODO: add boolean for logging and change logging procedure
+     * @param context - application context
+     * @param logToFile - whether to log the raw timestamps to a file
+     *                  or store them in a circular buffer in mem
      */
-    public BenchmarkProfileServer(Context context){
+    public BenchmarkProfileServer(Context context, boolean logToFile){
         File path = context.getExternalFilesDir(null);
         setTimeStampFile(new File(path, "gatt_cap.txt"));
 
@@ -54,6 +57,14 @@ public class BenchmarkProfileServer extends BenchmarkProfile {
 
         mGattServer = new GattServer (context, createBenchmarkService());
 
+    }
+
+    /**
+     * Initialize and log to file by default
+     * @param context
+     */
+    public BenchmarkProfileServer (Context context){
+        this(context, true);
     }
 
     /**
