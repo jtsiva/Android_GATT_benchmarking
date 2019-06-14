@@ -11,11 +11,16 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.BroadcastReceiver;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.ParcelUuid;
 import android.util.Log;
 import android.content.Context;
@@ -38,6 +43,7 @@ public class GattClient extends BluetoothGattCallback
                         implements CharacteristicHandler{
     private static final String TAG = BenchmarkClient.class.getSimpleName();
 
+    private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
     private Map<String, BluetoothGatt> mConnectedDevices = new HashMap<String, BluetoothGatt>();
@@ -46,32 +52,65 @@ public class GattClient extends BluetoothGattCallback
     private UiUpdate mUiUpdate = null;
     private CharacteristicHandler mCharHandler = null;
 
+    private boolean mHasBTSupport;
+
     private Context mContext;
     private UUID mTargetService;
 
     /**
+     * Initialize the context, bluetooth adapter, and service UUID
+     * that we want to connect to
      *
-     * @param context
-     * @param targetServiceID
+     * @param context - the application context
+     * @param targetServiceID - UUID of the service to scan for
      */
     public GattClient (Context context, UUID targetService) {
         this.mContext = context;
         this.mTargetService = targetService;
         this.mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        mBluetoothManager = (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
+        // We can't continue without proper Bluetooth support
+        if (!checkBluetoothSupport(bluetoothAdapter)) {
+            mHasBTSupport = false;
+        }
+
+    }
+
+    /**
+     * Verify the level of Bluetooth support provided by the hardware.
+     * @param bluetoothAdapter System {@link BluetoothAdapter}.
+     * @return true if Bluetooth is properly supported, false otherwise.
+     */
+    private boolean checkBluetoothSupport(BluetoothAdapter bluetoothAdapter) {
+
+        if (bluetoothAdapter == null) {
+            Log.w(TAG, "Bluetooth is not supported");
+            return false;
+        }
+
+        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+            Log.w(TAG, "Bluetooth LE is not supported");
+            return false;
+        }
+
+        return true;
     }
 
 
     /**
+     * Set the characteristic handler up the stack
      *
-     * @param charHandler
+     * @param charHandler - the handler
      */
     public void setHandler (CharacteristicHandler charHandler) {
         mCharHandler = charHandler;
     }
 
     /**
+     * The handler *from* the profile. Adds the data to an outbound queue.
      *
-     * @param data
+     * @param data - data to be sent
      */
     @Override
     public GattData handleCharacteristic(GattData data) {
@@ -88,26 +127,44 @@ public class GattClient extends BluetoothGattCallback
     }
 
     /**
+     * Start scanning for the target service
      *
+     * @param stopScanningAfterConnect - indicate whether to continue scanning
+     *                                 after making a connection
+     *
+     * NOT IMPLEMENTED
      */
-    public void start () {
+    public void start (boolean stopScanningAfterConnect) {
+
+        IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+        mContext.registerReceiver(mBluetoothReceiver, filter);
+        BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
+        if (!bluetoothAdapter.isEnabled()) {
+            Log.d(TAG, "Bluetooth is currently disabled...enabling");
+            bluetoothAdapter.enable();
+        } else {
+            Log.d(TAG, "Bluetooth enabled...starting services");
+            startScanning();
+        }
 
     }
 
     /**
-     *
+     * Start scanning for target service. Stops scanning after a connection
+     * is made as default.
      */
-    public void stop () {
-
+    public void start (){
+        this.start(true);
     }
 
     /**
-     *
+     * Set up the scan filter and the scan parameters and then start
+     * scanning
      */
-    private void startScan(){
+    private void startScanning() {
         //scan filters
         ScanFilter ResultsFilter = new ScanFilter.Builder()
-                .setServiceUuid(new ParcelUuid(UART_UUID))
+                .setServiceUuid(new ParcelUuid(mTargetService))
                 .build();
 
         ArrayList<ScanFilter> filters = new ArrayList<ScanFilter>();
@@ -117,7 +174,7 @@ public class GattClient extends BluetoothGattCallback
         //scan settings
         ScanSettings settings = new ScanSettings.Builder()
                 //.setReportDelay(0) //0: no delay; >0: queue up
-                .setScanMode(this.scanSetting) //LOW_POWER, BALANCED, LOW_LATENCY
+                .setScanMode(LOW_LATENCY) //LOW_POWER, BALANCED, LOW_LATENCY
                 .build();
 
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
@@ -129,16 +186,46 @@ public class GattClient extends BluetoothGattCallback
     }
 
     /**
+     * Disconnect and stop scanning
      *
+     * NOT IMPLEMENTED
      */
-    private void stopScanning () {
-        if (mBluetoothLeScanner != null)
+    public void stop () {
+        //disconnect
+
+        BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
+        if (bluetoothAdapter.isEnabled() && mBluetoothLeScanner != null) {
             mBluetoothLeScanner.stopScan(mScanCallback);
-        Log.i("Central","LE scan stopped");
+            Log.i("TAG", "LE scan stopped");
+        }
     }
 
     /**
-     *
+     * Listens for Bluetooth adapter events to enable/disable
+     * scanning
+     */
+    private BroadcastReceiver mBluetoothReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.STATE_OFF);
+
+            switch (state) {
+                case BluetoothAdapter.STATE_ON:
+                    startScanning();
+                    break;
+                case BluetoothAdapter.STATE_OFF:
+                    stopScanning();
+                    break;
+                default:
+                    // Do nothing
+            }
+        }
+    };
+
+
+    /**
+     * Set up the callbacks for the scanner. When a result is received, connect
+     * On failure, log failure code
      */
     private ScanCallback mScanCallback = new ScanCallback () {
         @Override
@@ -153,6 +240,7 @@ public class GattClient extends BluetoothGattCallback
     };
 
     /**
+     * Perform the requested operation.
      *
      * @param data
      */
@@ -162,6 +250,9 @@ public class GattClient extends BluetoothGattCallback
 
     /**
      *
+     * @param gatt
+     * @param status
+     * @param newState
      */
     @Override
     public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -185,6 +276,11 @@ public class GattClient extends BluetoothGattCallback
         }
     }
 
+    /**
+     *
+     * @param gatt
+     * @param status
+     */
     @Override
     public void onServicesDiscovered(BluetoothGatt gatt, int status) {
         super.onServicesDiscovered(gatt, status);
