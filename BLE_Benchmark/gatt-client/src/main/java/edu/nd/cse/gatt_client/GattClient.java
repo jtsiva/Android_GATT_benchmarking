@@ -174,7 +174,7 @@ public class GattClient extends BluetoothGattCallback
         //scan settings
         ScanSettings settings = new ScanSettings.Builder()
                 //.setReportDelay(0) //0: no delay; >0: queue up
-                .setScanMode(LOW_LATENCY) //LOW_POWER, BALANCED, LOW_LATENCY
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY) //LOW_POWER, BALANCED, LOW_LATENCY
                 .build();
 
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
@@ -214,7 +214,7 @@ public class GattClient extends BluetoothGattCallback
                     startScanning();
                     break;
                 case BluetoothAdapter.STATE_OFF:
-                    stopScanning();
+                    stop();
                     break;
                 default:
                     // Do nothing
@@ -355,7 +355,7 @@ public class GattClient extends BluetoothGattCallback
 
         if (status == BluetoothGatt.GATT_SUCCESS) {
             mCharHandler.handleCharacteristic(new GattData(address,
-                                                            characteristic.getUUID(),
+                                                            characteristic.getUuid(),
                                                             characteristic.getValue()));
         }
         else {
