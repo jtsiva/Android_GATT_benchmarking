@@ -11,6 +11,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
@@ -108,7 +109,7 @@ public class GattClient extends BluetoothGattCallback
     }
 
     /**
-     * The handler *from* the profile. Adds the data to an outbound queue.
+     * The handler called by the profile. Adds the data to an outbound queue.
      *
      * @param data - data to be sent
      */
@@ -240,12 +241,18 @@ public class GattClient extends BluetoothGattCallback
     };
 
     /**
-     * Perform the requested operation.
+     * Perform the requested operation. In this case, write to the characteristic
      *
-     * @param data
+     * @param data - collection of information needed to perform operation
      */
     private void performOperation (GattData data) {
         //perform operation on characteristic
+        BluetoothGattService service = mConnectedDevices.get(data.mAddress).getService(mTargetService);
+
+        BluetoothGattCharacteristic characteristic = service.getCharacteristic(data.mCharID);
+        characteristic.setValue(data.mBuffer);
+
+        mConnectedDevices.get(data.mAddress).writeCharacteristic(characteristic);
     }
 
     /**
@@ -306,7 +313,7 @@ public class GattClient extends BluetoothGattCallback
     }
 
     /**
-     * We don't really need to do anything after a read is completed. We just
+     * We don't really need to do anything after a write is completed. We just
      * need to make sure we pull something from queue (if we can) to initiate
      * another write
      *
@@ -331,7 +338,7 @@ public class GattClient extends BluetoothGattCallback
         if (null == data) { //empty!
             mIsIdle = true;
         } else {
-            mCharHandler.handleCharacteristic(data);
+            performOperation(data);
         }
 
     }
