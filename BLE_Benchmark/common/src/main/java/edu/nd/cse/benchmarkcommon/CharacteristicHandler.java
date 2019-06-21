@@ -10,7 +10,8 @@ public interface CharacteristicHandler {
 
     /**
      * Generic sort of function that can be used for handling data in
-     * either direction (writes or receives)
+     * either direction (writes or reads). The convention is that if
+     * the buffer in the data is empty then the operation is a read.
      *
      * @param GattData - the data coming from or going to the GATT layer
      * @return data for response (if needed), null if no response
