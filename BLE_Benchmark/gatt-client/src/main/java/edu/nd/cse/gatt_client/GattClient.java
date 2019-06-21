@@ -80,11 +80,11 @@ public class GattClient extends BluetoothGattCallback
 
     /**
      * Initialize things and set up handlers
-     * 
-     * @param context
-     * @param targetService
-     * @param charHandler
-     * @param connUpdater
+     *
+     * @param context - application context
+     * @param targetService - the service to scan for
+     * @param charHandler - the characteristic handler
+     * @param connUpdater - the connection update handler
      */
     public GattClient (Context context, UUID targetService,
                        CharacteristicHandler charHandler,
@@ -313,6 +313,7 @@ public class GattClient extends BluetoothGattCallback
         if (newState == BluetoothGatt.STATE_CONNECTED) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 mConnectedDevices.put(gatt.getDevice().getAddress(), gatt);
+                mConnUpdater.connectionUpdate(gatt.getDevice().getAddress(), 1);
 
                 if (mStopScanningOnConnect) {
                     stopScanning();
@@ -327,6 +328,7 @@ public class GattClient extends BluetoothGattCallback
         else if (newState == BluetoothGatt.STATE_DISCONNECTED) {
             // Disconnected, notify callbacks of disconnection.
             mConnectedDevices.remove(gatt.getDevice().getAddress());
+            mConnUpdater.connectionUpdate(gatt.getDevice().getAddress(), 0);
 
             //notifyOnDisconnected(this);
         }

@@ -1,7 +1,5 @@
 package edu.nd.cse.gatt_client;
 
-import edu.nd.cse.benchmarkcommon.BenchmarkProfileClientCallback;
-
 import android.content.Context;
 
 /**
@@ -29,13 +27,15 @@ import android.content.Context;
 public class BenchmarkProfileClient {
     private static final String TAG = BenchmarkProfileServer.class.getSimpleName();
 
+    private GattClient mGattClient;
+
     /**
      * Ready the profile
      * @param context - the application context
      * @param cb - callback defined by the application to handle interactions
      */
     public BenchmarkProfileClient (Context context, BenchmarkProfileClientCallback cb) {
-
+        
     }
 
     /**
