@@ -54,6 +54,8 @@ public class GattClient extends BluetoothGattCallback
     private CharacteristicHandler mCharHandler = null;
 
     private boolean mHasBTSupport;
+    private boolean mStopScanningOnConnect;
+    private boolean mScanStarted = false;
 
     private Context mContext;
     private UUID mTargetService;
@@ -66,13 +68,12 @@ public class GattClient extends BluetoothGattCallback
      * @param targetServiceID - UUID of the service to scan for
      */
     public GattClient (Context context, UUID targetService) {
-        this.mContext = context;
-        this.mTargetService = targetService;
-        this.mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        mContext = context;
+        mTargetService = targetService;
         mBluetoothManager = (BluetoothManager) mContext.getSystemService(Context.BLUETOOTH_SERVICE);
-        BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
+        mBluetoothAdapter = mBluetoothManager.getAdapter();
         // We can't continue without proper Bluetooth support
-        if (!checkBluetoothSupport(bluetoothAdapter)) {
+        if (!checkBluetoothSupport(mBluetoothAdapter)) {
             mHasBTSupport = false;
         }
 
@@ -133,16 +134,15 @@ public class GattClient extends BluetoothGattCallback
      * @param stopScanningAfterConnect - indicate whether to continue scanning
      *                                 after making a connection
      *
-     * NOT IMPLEMENTED
      */
-    public void start (boolean stopScanningAfterConnect) {
-
+    public void start (boolean stopScanningOnConnect) {
+        mStopScanningOnConnect = stopScanningOnConnect;
         IntentFilter filter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
         mContext.registerReceiver(mBluetoothReceiver, filter);
-        BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
-        if (!bluetoothAdapter.isEnabled()) {
+
+        if (!mBluetoothAdapter.isEnabled()) {
             Log.d(TAG, "Bluetooth is currently disabled...enabling");
-            bluetoothAdapter.enable();
+            mBluetoothAdapter.enable();
         } else {
             Log.d(TAG, "Bluetooth enabled...starting services");
             startScanning();
@@ -170,7 +170,7 @@ public class GattClient extends BluetoothGattCallback
 
         ArrayList<ScanFilter> filters = new ArrayList<ScanFilter>();
         filters.add(ResultsFilter);
-        Log.i("Central","BLE SCAN STARTED");
+        Log.i(TAG,"BLE scan started");
 
         //scan settings
         ScanSettings settings = new ScanSettings.Builder()
@@ -184,20 +184,32 @@ public class GattClient extends BluetoothGattCallback
             return;
         }
         mBluetoothLeScanner.startScan(filters, settings, mScanCallback);
+        mScanStarted = true;
     }
 
     /**
      * Disconnect and stop scanning
      *
-     * NOT IMPLEMENTED
      */
     public void stop () {
-        //disconnect
+        for (Map.Entry<String, BluetoothGatt> entry : mConnectedDevices.entrySet()) {
+            entry.getValue().disconnect();
+        }
 
-        BluetoothAdapter bluetoothAdapter = mBluetoothManager.getAdapter();
-        if (bluetoothAdapter.isEnabled() && mBluetoothLeScanner != null) {
-            mBluetoothLeScanner.stopScan(mScanCallback);
-            Log.i("TAG", "LE scan stopped");
+        stopScanning();
+    }
+
+    /**
+     * Stop scanning
+     */
+    private void stopScanning () {
+        if (mScanStarted) {
+            if (mBluetoothAdapter.isEnabled() && mBluetoothLeScanner != null) {
+                mBluetoothLeScanner.stopScan(mScanCallback);
+                Log.i("TAG", "LE scan stopped");
+            }
+
+            mScanStarted = false;
         }
     }
 
@@ -231,7 +243,13 @@ public class GattClient extends BluetoothGattCallback
     private ScanCallback mScanCallback = new ScanCallback () {
         @Override
         public void onScanResult ( int callbackType, ScanResult result){
-            //connect
+
+            if (!(mStopScanningOnConnect && mConnectedDevices.size() > 0)) {
+                if (!mConnectedDevices.containsKey(result.getDevice().getAddress())) {
+                    connect(result.getDevice());
+                }
+            }
+
         }
 
         @Override
@@ -241,12 +259,19 @@ public class GattClient extends BluetoothGattCallback
     };
 
     /**
+     * Initiate connection with device
+     * @param device - gatt device to which a connection will be started
+     */
+    private void connect(BluetoothDevice device) {
+        device.connectGatt(mContext, false, this, BluetoothDevice.TRANSPORT_LE);
+    }
+
+    /**
      * Perform the requested operation. In this case, write to the characteristic
      *
      * @param data - collection of information needed to perform operation
      */
     private void performOperation (GattData data) {
-        //perform operation on characteristic
         BluetoothGattService service = mConnectedDevices.get(data.mAddress).getService(mTargetService);
 
         BluetoothGattCharacteristic characteristic = service.getCharacteristic(data.mCharID);
@@ -256,10 +281,12 @@ public class GattClient extends BluetoothGattCallback
     }
 
     /**
+     * Add gatt object to hashmap for device that connects or remove if
+     * device disconnects
      *
-     * @param gatt
-     * @param status
-     * @param newState
+     * @param gatt - the gatt object to handle
+     * @param status - success or fail
+     * @param newState - connect or disconnect
      */
     @Override
     public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
@@ -268,6 +295,9 @@ public class GattClient extends BluetoothGattCallback
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 mConnectedDevices.put(gatt.getDevice().getAddress(), gatt);
 
+                if (mStopScanningOnConnect) {
+                    stopScanning();
+                }
                 //gatt.requestMtu(this.mtu);
             }
             else {
@@ -284,9 +314,10 @@ public class GattClient extends BluetoothGattCallback
     }
 
     /**
+     * After service discovery, check that target service is available
      *
-     * @param gatt
-     * @param status
+     * @param gatt - object to handle
+     * @param status - success or fail of service discovery
      */
     @Override
     public void onServicesDiscovered(BluetoothGatt gatt, int status) {
@@ -300,12 +331,10 @@ public class GattClient extends BluetoothGattCallback
             Log.e(TAG, "onServicesDiscovered gatt success");
         }
 
-        BluetoothDevice device = gatt.getDevice();
-        String address = device.getAddress();
-        final BluetoothGatt bluetoothGatt = mConnectedDevices.get(address);
+        final BluetoothGatt bluetoothGatt = mConnectedDevices.get(gatt.getDevice().getAddress());
 
         //reference to each UART characteristic
-        if (null == bluetoothGatt.getService(BenchmarkProfile.BENCHMARK_SERVICE)) {
+        if (null == bluetoothGatt.getService(mTargetService)) {
             //connectFailure();
             Log.e(TAG, "onServicesDiscovered gatt failure");
             return;
@@ -313,8 +342,7 @@ public class GattClient extends BluetoothGattCallback
     }
 
     /**
-     * We don't really need to do anything after a write is completed. We just
-     * need to make sure we pull something from queue (if we can) to initiate
+     * Pull something from queue (if we can) to initiate
      * another write
      *
      * @param gatt - the gatt instance for the connected device
@@ -356,17 +384,13 @@ public class GattClient extends BluetoothGattCallback
     public void onCharacteristicRead (BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
         super.onCharacteristicRead(gatt, characteristic, status);
 
-        BluetoothDevice device = gatt.getDevice();
-        String address = device.getAddress();
-        final BluetoothGatt bluetoothGatt = mConnectedDevices.get(address);
-
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            mCharHandler.handleCharacteristic(new GattData(address,
+            mCharHandler.handleCharacteristic(new GattData(gatt.getDevice().getAddress(),
                                                             characteristic.getUuid(),
                                                             characteristic.getValue()));
         }
         else {
-            Log.w("DIS", "Failed reading characteristic " + characteristic.getUuid().toString());
+            Log.w(TAG, "Failed reading characteristic " + characteristic.getUuid().toString());
         }
     }
 }
