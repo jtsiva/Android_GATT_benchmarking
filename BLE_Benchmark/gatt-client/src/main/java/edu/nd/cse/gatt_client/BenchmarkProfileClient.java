@@ -27,6 +27,7 @@ import android.content.Context;
  * GATT communication works and how UI interactions work
  */
 public class BenchmarkProfileClient {
+    private static final String TAG = BenchmarkProfileServer.class.getSimpleName();
 
     /**
      * Ready the profile

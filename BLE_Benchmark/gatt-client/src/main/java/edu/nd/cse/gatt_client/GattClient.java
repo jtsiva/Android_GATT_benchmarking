@@ -1,6 +1,7 @@
 package edu.nd.cse.gatt_client;
 
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
+import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
 import edu.nd.cse.benchmarkcommon.GattData;
 import edu.nd.cse.benchmarkcommon.UiUpdate;
 
@@ -49,6 +50,7 @@ public class GattClient extends BluetoothGattCallback
     private boolean mIsIdle = true;
     private UiUpdate mUiUpdate = null;
     private CharacteristicHandler mCharHandler = null;
+    private ConnectionUpdater mConnUpdater = null;
 
     private boolean mHasBTSupport;
     private boolean mStopScanningOnConnect;
@@ -74,6 +76,22 @@ public class GattClient extends BluetoothGattCallback
             mHasBTSupport = false;
         }
 
+    }
+
+    /**
+     * Initialize things and set up handlers
+     * 
+     * @param context
+     * @param targetService
+     * @param charHandler
+     * @param connUpdater
+     */
+    public GattClient (Context context, UUID targetService,
+                       CharacteristicHandler charHandler,
+                       ConnectionUpdater connUpdater) {
+        this(context, targetService);
+        mCharHandler = charHandler;
+        mConnUpdater = connUpdater;
     }
 
     /**
