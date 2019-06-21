@@ -1,6 +1,5 @@
 package edu.nd.cse.gatt_client;
 
-import edu.nd.cse.benchmarkcommon.BenchmarkProfile;
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
 import edu.nd.cse.benchmarkcommon.GattData;
 import edu.nd.cse.benchmarkcommon.UiUpdate;
@@ -27,12 +26,10 @@ import android.util.Log;
 import android.content.Context;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -48,7 +45,7 @@ public class GattClient extends BluetoothGattCallback
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
     private Map<String, BluetoothGatt> mConnectedDevices = new HashMap<String, BluetoothGatt>();
-    private final Queue<GattData> mWriteQueue = new ConcurrentLinkedQueue<GattData>();
+    private final Queue<GattData> mOperationQueue = new ConcurrentLinkedQueue<GattData>();
     private boolean mIsIdle = true;
     private UiUpdate mUiUpdate = null;
     private CharacteristicHandler mCharHandler = null;
@@ -110,17 +107,17 @@ public class GattClient extends BluetoothGattCallback
     }
 
     /**
-     * The handler called by the profile. Adds the data to an outbound queue.
+     * The handler called by the profile. Adds the data to the operation queue.
      *
      * @param data - data to be sent
      */
     @Override
     public GattData handleCharacteristic(GattData data) {
         if (null != data) {
-            mWriteQueue.add(data);
+            mOperationQueue.add(data);
             if (mIsIdle) {
                 mIsIdle = false;
-                GattData readyData = mWriteQueue.poll();
+                GattData readyData = mOperationQueue.poll();
                 performOperation(readyData);
             }
         }
@@ -267,17 +264,21 @@ public class GattClient extends BluetoothGattCallback
     }
 
     /**
-     * Perform the requested operation. In this case, write to the characteristic
+     * Perform the requested operation.
      *
      * @param data - collection of information needed to perform operation
      */
     private void performOperation (GattData data) {
         BluetoothGattService service = mConnectedDevices.get(data.mAddress).getService(mTargetService);
-
         BluetoothGattCharacteristic characteristic = service.getCharacteristic(data.mCharID);
-        characteristic.setValue(data.mBuffer);
 
-        mConnectedDevices.get(data.mAddress).writeCharacteristic(characteristic);
+        if (null == data.mBuffer) { //read
+            mConnectedDevices.get(data.mAddress).readCharacteristic(characteristic);
+        }
+        else { //write
+            characteristic.setValue(data.mBuffer);
+            mConnectedDevices.get(data.mAddress).writeCharacteristic(characteristic);
+        }
     }
 
     /**
@@ -361,7 +362,7 @@ public class GattClient extends BluetoothGattCallback
             Log.d(TAG,"Characteristic write FAILED");
         }
 
-        GattData data = mWriteQueue.poll();
+        GattData data = mOperationQueue.poll();
 
         if (null == data) { //empty!
             mIsIdle = true;
