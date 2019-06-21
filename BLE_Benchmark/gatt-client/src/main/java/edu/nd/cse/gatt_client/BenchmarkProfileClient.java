@@ -1,5 +1,10 @@
 package edu.nd.cse.gatt_client;
 
+import edu.nd.cse.benchmarkcommon.BenchmarkProfile;
+import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
+import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
+import edu.nd.cse.benchmarkcommon.GattData;
+
 import android.content.Context;
 
 /**
@@ -24,10 +29,24 @@ import android.content.Context;
  * interaction with the profile is asynchronous--fitting with how the
  * GATT communication works and how UI interactions work
  */
-public class BenchmarkProfileClient {
-    private static final String TAG = BenchmarkProfileServer.class.getSimpleName();
+public class BenchmarkProfileClient extends BenchmarkProfile implements CharacteristicHandler{
+    private static final String TAG = BenchmarkProfileClient.class.getSimpleName();
 
     private GattClient mGattClient;
+    private BenchmarkProfileClientCallback mCB;
+    private String mClientAddress;
+    private ConnectionUpdater mConnUpdater = new ConnectionUpdater (){
+            @Override
+            public void connectionUpdate (String address, int state){
+                if (1 == state){
+                    mClientAddress = address;
+                }
+            }
+    };
+
+    private int mMtu = 20;
+    private int mConnInterval;
+    private int mDataSize;
 
     /**
      * Ready the profile
@@ -35,14 +54,18 @@ public class BenchmarkProfileClient {
      * @param cb - callback defined by the application to handle interactions
      */
     public BenchmarkProfileClient (Context context, BenchmarkProfileClientCallback cb) {
-        
+        mGattClient = new GattClient(context, BenchmarkProfile.BENCHMARK_SERVICE,
+                                        this, mConnUpdater);
+        mCB = cb;
     }
+
+
 
     /**
      * Set up the connection with default testing values
      */
     public void prepare() {
-
+        mGattClient.start();
     }
 
     /**
@@ -124,6 +147,27 @@ public class BenchmarkProfileClient {
     }
 
     /**
+     * Match the incoming message to the appropriate callback
+     * @param data - the gatt data from the gatt layer
+     */
+    @Override
+    public GattData handleCharacteristic (GattData data) {
+        if (BenchmarkProfile.THROUGHPUT_CHAR.equals(data.mCharID)) {
+            mCB.onThroughputAvailable(Float.parseFloat(new String(data.mBuffer)));
+            data.mBuffer = null;
+        }
+        else if(BenchmarkProfile.LOSS_RATE_CHAR.equals(data.mCharID)) {
+            mCB.onLossRateAvailable(Float.parseFloat(new String(data.mBuffer)));
+            data.mBuffer = null;
+        }
+        else { //we can't handle this so return null
+            data = null;
+        }
+
+        return data;
+    }
+
+    /**
      * Request MTU change from GATT layer. Return immediately. Completion
      * of operation communicated through callback.
      *
@@ -149,6 +193,18 @@ public class BenchmarkProfileClient {
      */
     private boolean setConnInterval (int connInterval) {
         return false;
+    }
+
+    /**
+     * 
+     * @param connInterval
+     * @return
+     */
+    private int intervalToPriority (int connInterval) {
+        int priority = 0;
+        switch(connInterval){
+
+        }
     }
 
     /**

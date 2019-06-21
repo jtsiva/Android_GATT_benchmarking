@@ -1,7 +1,5 @@
 package edu.nd.cse.benchmarkcommon;
 
-import ConnectionUpdaterIFace;
-
 public class ConnectionUpdater implements ConnectionUpdaterIFace {
 
     public void mtuUpdate(String address, int mtu){
