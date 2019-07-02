@@ -189,21 +189,24 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     /**
      * Request the throughput fom the benchmark. Calling this during the
      * test will affect the results.
-     *
-     * TODO: implement as minimum functionality
      */
     public void requestThroughput () {
-        //mGattClient.handleCharacteristic();
+        mGattClient.handleCharacteristic(new GattData(
+                        mServerAddress,
+                        BenchmarkProfile.THROUGHPUT_CHAR,
+                        null));
     }
 
     /**
      * Request the loss rate from the benchmark. Calling this during the
      * test will affect the results.
      *
-     * TODO: implement as basic functionality
      */
     public void requestLossRate () {
-
+        mGattClient.handleCharacteristic(new GattData(
+                mServerAddress,
+                BenchmarkProfile.LOSS_RATE_CHAR,
+                null));
     }
 
     /**
