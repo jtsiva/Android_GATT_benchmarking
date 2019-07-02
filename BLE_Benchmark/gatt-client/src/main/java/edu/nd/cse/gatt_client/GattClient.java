@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * operations, and interfacing with profile layer
  */
 public class GattClient extends BluetoothGattCallback
-                        implements CharacteristicHandler{
+                        implements CharacteristicHandler, ConnectionUpdaterIFace{
     private static final String TAG = BenchmarkClient.class.getSimpleName();
 
     private BluetoothManager mBluetoothManager;
@@ -215,7 +215,7 @@ public class GattClient extends BluetoothGattCallback
     }
 
     /**
-     * Stop scanning
+     * Stop scanning (if started)
      */
     private void stopScanning () {
         if (mScanStarted) {
@@ -298,6 +298,83 @@ public class GattClient extends BluetoothGattCallback
             mConnectedDevices.get(data.mAddress).writeCharacteristic(characteristic);
         }
     }
+
+    /*************************************************************************/
+    /********************* CONNECTION UPDATER CALLBACKS **********************/
+    /*************************************************************************/
+
+    /**
+     * Request an mtu update
+     *
+     * TODO: implement
+     *
+     * @param address - device from which to make the request
+     * @param mtu - the mtu size to request
+     */
+    public void mtuUpdate(String address, int mtu){
+        mConnUpdater.mtuUpdate(address, mtu); //respond back to confirm
+    }
+
+    /**
+     * Request a connection priority/interval update
+     *
+     * TODO: implement
+     *
+     * @param address - device from which to make the request
+     * @param interval - the interval in ms to use
+     */
+    public void connIntervalUpdate (String address, int interval)
+    {
+        int priority = intervalToPriority(interval);
+        interval = priority != -1 ? interval : priority; // set to -1 if bad value
+        mConnUpdater.connIntervalUpdate (address, interval); // respond to confirm
+    }
+
+    /**
+     * Convert a connection interval to a priority as defined by Android.
+     * Android uses a range of values for each priority, so if a connInterval
+     * value falls within a range it will all map to the same priority. Note
+     * also that the low priority (2) will set the slave latency to 2.
+     *
+     * code reference: {@link https://android.googlesource.com/platform/packages/apps/Bluetooth/+/4a9f9b0/src/com/android/bluetooth/gatt/GattService.java#1661}
+     *
+     * @param connInterval - the interval in milliseconds
+     * @return -1 if not supported, BluetoothGatt.CONNECTION_PRIORITY_BALANCED,
+     * BluetoothGatt.CONNECTION_PRIORITY_HIGH, or BluetoothGatt.CONNECTION_PRIORITY_LOW
+     */
+    private int intervalToPriority (int connInterval) {
+        int priority = -1;
+
+        if (30 <= connInterval && connInterval <= 50) {
+            priority = BluetoothGatt.CONNECTION_PRIORITY_BALANCED;
+        }
+        else if (11.25 <= connInterval && connInterval <= 15){
+            priority = BluetoothGatt.CONNECTION_PRIORITY_HIGH;
+        }
+        else if (100 <= connInterval && connInterval <= 125) {
+            priority = BluetoothGatt.CONNECTION_PRIORITY_LOW;
+        }
+
+        return priority;
+    }
+
+    /**
+     * Request to make or break a connection with a device
+     *
+     * TODO: implement
+     *
+     * @param address - device from which to make the request
+     * @param state - the state that we want to change to. 0 to
+     *              disconnect, 1 to connect
+     */
+    public void connectionUpdate (String address, int state)
+    {
+        // does nothing right now
+    }
+
+    /*************************************************************************/
+    /**************************** GATT CALLBACKS *****************************/
+    /*************************************************************************/
 
     /**
      * Add gatt object to hashmap for device that connects or remove if

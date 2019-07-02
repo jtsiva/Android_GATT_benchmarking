@@ -34,19 +34,20 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
 
     private GattClient mGattClient;
     private BenchmarkProfileClientCallback mCB;
-    private String mClientAddress;
-    private ConnectionUpdater mConnUpdater = new ConnectionUpdater (){
-            @Override
-            public void connectionUpdate (String address, int state){
-                if (1 == state){
-                    mClientAddress = address;
-                }
-            }
-    };
+    private String mServerAddress = null;
 
+    private long mBenchmarkStart = null;
+    private long mBenchmarkDuration = null;
+
+
+    //performance parameters
     private int mMtu = 20;
-    private int mConnInterval;
-    private int mDataSize;
+    private boolean mMtuState;
+    private int mConnInterval = 40; //balanced
+    private boolean mConnIntervalState;
+    private int mDataSize = 20;
+    private boolean mDataSizeState;
+
 
     /**
      * Ready the profile
@@ -62,10 +63,10 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
 
 
     /**
-     * Set up the connection with default testing values
+     * Set up the connection with default testing values.
      */
     public void prepare() {
-        mGattClient.start();
+        return this.prepare(mMtu, mConnInterval, mDataSize);
     }
 
     /**
@@ -74,24 +75,19 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * @param mtu - the maximum transmission unit to be used by LL.
      * @param interval - the connection interval to be used.
      * @param dataSize - the amount of data to send in each packet.
-     * @return true if the values are valid, false otherwise
      */
-    public boolean prepare(int mtu, int interval, int dataSize){
-         if(!setMtu (mtu) && setConnInterval(interval) && setDataSize(dataSize)){
-             return false;
-         }
-         else {
-             //do things -- maybe
-         }
-
-         return true;
+    public void prepare(int mtu, int interval, int dataSize){
+        mGattClient.start(); // will scan and connect to first device
+        mMtu = mtu;
+        mConnInterval = interval;
+        mDataSize = dataSize;
     }
 
     /**
      * Close connections and release resources
      */
     public void cleanup () {
-
+        mGattClient.stop();
     }
 
     /**
@@ -125,6 +121,8 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     /**
      * Request the raw timestamps from the benchmark. Calling this during
      * the test will affect the results.
+     *
+     * TODO: implement as advanced functionality -- need netstring parser
      */
     public void requestRawTimestamps () {
 
@@ -133,14 +131,18 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     /**
      * Request the throughput fom the benchmark. Calling this during the
      * test will affect the results.
+     *
+     * TODO: implement as minimum functionality
      */
     public void requestThroughput () {
-
+        //mGattClient.handleCharacteristic();
     }
 
     /**
      * Request the loss rate from the benchmark. Calling this during the
      * test will affect the results.
+     *
+     * TODO: implement as basic functionality
      */
     public void requestLossRate () {
 
@@ -148,6 +150,9 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
 
     /**
      * Match the incoming message to the appropriate callback
+     *
+     * TODO: implement handling for raw data
+     *
      * @param data - the gatt data from the gatt layer
      */
     @Override
@@ -171,53 +176,78 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * Request MTU change from GATT layer. Return immediately. Completion
      * of operation communicated through callback.
      *
-     * TODO: include valid span
-     * TODO: implement
-     *
-     * @param mtu - the maximum transmission unit to use. Values can span
-     * @return true if mtu is a valid value, false otherwise
+     * @param mtu - the maximum transmission unit to use.
      */
-    private boolean setMtu (int mtu) {
-        return false;
+    private void setMtu (int mtu) {
+        mMtuState = false; //unsure if okay right now
+        mGattClient.mtuUpdate(mServerAddress, mtu);
     }
 
     /**
      * Request a connection interval change from the GATT layer. Return
      * immediately. Completion of operation communicated through callback
      *
-     * TODO: specify values
-     *
-     * @param connInterval - the connection interval to use. Possible values
-     *                     are
-     * @return true if connInterval is a valid value, false otherwise
+     * @param connInterval - the connection interval (in ms) to use.
      */
-    private boolean setConnInterval (int connInterval) {
-        return false;
+    private void setConnInterval (int connInterval) {
+        mConnIntervalState = false; //unsure if okay right now
+        mGattClient.connIntervalUpdate(mServerAddress, connInterval)
     }
 
-    /**
-     * 
-     * @param connInterval
-     * @return
-     */
-    private int intervalToPriority (int connInterval) {
-        int priority = 0;
-        switch(connInterval){
 
-        }
-    }
 
     /**
      * Set the size of the (random) data to be used for each interaction.
-     * Returns immediately.
      *
      * @param dataSize - the size of data to use. Values can range from
      *                 1 to MTU.
-     * @return true if data size is valid, false otherwise
      */
-    private boolean setDataSize (int dataSize) {
-        return false;
+    private void setDataSize (int dataSize) {
+        if (0 < dataSize && dataSize <= mMtu && mMtuState) {
+            mDataSizeState = true;
+        }
+
+        mDataSizeState = false;
     }
+
+    /**
+     * Connection updater callback that is passed to Gatt Client.
+     */
+    private ConnectionUpdater mConnUpdater = new ConnectionUpdater (){
+        @Override
+        public void connectionUpdate (String address, int state){
+            if (1 == state){
+                mServerAddress = address;
+
+                setMtu (mMtu);
+                setConnInterval(mConnInterval);
+                setDataSize(mDataSize);
+            }
+        }
+
+        @Override
+        public void mtuUpdate(String address, int mtu){
+            if (mtu != mMtu) {
+                mCB.BenchmarkError(BenchmarkProfileClientCallback.SET_MTU_ERROR
+                        , "set MTU to " + mMtu + ", but there was an error");
+            }
+            else {
+                mMtuState = true;
+            }
+        }
+
+        @Override
+        public void connIntervalUpdate (String address, int interval){
+            if (interval != mConnInterval) {
+                mCB.BenchmarkError(BenchmarkProfileClientCallback.SET_CONN_INTERVAL_ERROR
+                        , "set connInterval to " + mConnInterval
+                                + ", but there was an error");
+            }
+            else {
+                mConnIntervalState = true;
+            }
+        }
+    };
 
 
 }
