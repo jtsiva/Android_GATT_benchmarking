@@ -5,7 +5,11 @@ import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
 import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
 import edu.nd.cse.benchmarkcommon.GattData;
 
+import android.os.Handler;
 import android.content.Context;
+import android.os.SystemClock;
+
+import java.util.Random;
 
 /**
  * This class implements the behavior of the client-side interactions
@@ -36,8 +40,12 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     private BenchmarkProfileClientCallback mCB;
     private String mServerAddress = null;
 
-    private long mBenchmarkStart = null;
-    private long mBenchmarkDuration = null;
+    private long mBenchmarkStart = 0; //nanoseconds
+    private long mBenchmarkDuration = 0; //nanoseconds
+    private Handler mPrepHandler = new Handler();
+    private Handler mBenchmarkHandler = new Handler();
+
+    private boolean mRun;
 
 
     //performance parameters
@@ -66,7 +74,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * Set up the connection with default testing values.
      */
     public void prepare() {
-        return this.prepare(mMtu, mConnInterval, mDataSize);
+        this.prepare(mMtu, mConnInterval, mDataSize);
     }
 
     /**
@@ -106,16 +114,66 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      *
      * @param durationMS - duration (in ms) to run the benchmark
      */
-    public void beginBenchmark (long durationMS) {
-
+    public void beginBenchmark (long duration) {
+        mRun = true;
+        mBenchmarkDuration = duration * 1000000; //ms to ns
+        mPrepHandler.post(readyToStartBenchmark);
     }
+
+    /**
+     * Check if our connection parameters are set up. If they are then
+     * go start the benchmark. Otherwise, wait 10 ms and check again
+     */
+    private Runnable readyToStartBenchmark = new Runnable() {
+        @Override
+        public void run() {
+            if (mMtuState && mConnIntervalState && mDataSizeState) {
+                //kick off benchmark
+                mBenchmarkHandler.post(goTest);
+                mBenchmarkStart = SystemClock.elapsedRealtimeNanos ();
+            } else {
+                //check back later
+                if (mRun) {
+                    mPrepHandler.postDelayed(this, 10);
+                }
+            }
+        }
+    };
+
+    /**
+     * Create some random bytes and pass them off to the Gatt layer directed
+     * at the test device. Schedule to do this again after conn interval ms if
+     * this will not exceed the benchmark duration. Call onBenchmarkComplete
+     * when done.
+     */
+    private Runnable goTest = new Runnable () {
+        @Override
+        public void run() {
+            byte [] b = new byte[mDataSize];
+            new Random().nextBytes(b);
+            GattData data = new GattData(mServerAddress, BenchmarkProfile.TEST_CHAR, b);
+
+            mGattClient.handleCharacteristic(data);
+
+            long now = SystemClock.elapsedRealtimeNanos ();
+
+            // if one more interval will not exceed the duration then post delayed
+            if ((now - mBenchmarkStart) + (mConnInterval * 1000000) < mBenchmarkDuration
+                    && mRun) {
+                mBenchmarkHandler.postDelayed(this, mConnInterval);
+            }
+            else {
+                mCB.onBenchmarkComplete();
+            }
+        }
+    };
 
     /**
      * End the benchmark now. Benchmark should not be considered ended until
      * callback is called
      */
     public void endBenchmark () {
-
+        mRun = false;
     }
 
     /**
@@ -191,7 +249,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      */
     private void setConnInterval (int connInterval) {
         mConnIntervalState = false; //unsure if okay right now
-        mGattClient.connIntervalUpdate(mServerAddress, connInterval)
+        mGattClient.connIntervalUpdate(mServerAddress, connInterval);
     }
 
 
@@ -228,7 +286,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
         @Override
         public void mtuUpdate(String address, int mtu){
             if (mtu != mMtu) {
-                mCB.BenchmarkError(BenchmarkProfileClientCallback.SET_MTU_ERROR
+                mCB.onBenchmarkError(BenchmarkProfileClientCallback.SET_MTU_ERROR
                         , "set MTU to " + mMtu + ", but there was an error");
             }
             else {
@@ -239,7 +297,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
         @Override
         public void connIntervalUpdate (String address, int interval){
             if (interval != mConnInterval) {
-                mCB.BenchmarkError(BenchmarkProfileClientCallback.SET_CONN_INTERVAL_ERROR
+                mCB.onBenchmarkError(BenchmarkProfileClientCallback.SET_CONN_INTERVAL_ERROR
                         , "set connInterval to " + mConnInterval
                                 + ", but there was an error");
             }

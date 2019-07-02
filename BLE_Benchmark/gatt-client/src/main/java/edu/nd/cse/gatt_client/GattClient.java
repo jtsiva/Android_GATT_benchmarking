@@ -2,6 +2,7 @@ package edu.nd.cse.gatt_client;
 
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
 import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
+import edu.nd.cse.benchmarkcommon.ConnectionUpdaterIFace;
 import edu.nd.cse.benchmarkcommon.GattData;
 import edu.nd.cse.benchmarkcommon.UiUpdate;
 
@@ -352,7 +353,7 @@ public class GattClient extends BluetoothGattCallback
             priority = BluetoothGatt.CONNECTION_PRIORITY_HIGH;
         }
         else if (100 <= connInterval && connInterval <= 125) {
-            priority = BluetoothGatt.CONNECTION_PRIORITY_LOW;
+            priority = BluetoothGatt.CONNECTION_PRIORITY_LOW_POWER;
         }
 
         return priority;
