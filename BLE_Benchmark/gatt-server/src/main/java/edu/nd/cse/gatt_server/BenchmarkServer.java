@@ -52,6 +52,7 @@ public class BenchmarkServer extends Activity{
                     }
                 });
             }
+            
             @Override
             public void onBenchmarkComplete (){
                 runOnUiThread(new Runnable() {
@@ -65,6 +66,8 @@ public class BenchmarkServer extends Activity{
                 mBenchmarkServer.stop();
             }
         });
+
+        mBenchmarkServer.start();
 
     }
 
