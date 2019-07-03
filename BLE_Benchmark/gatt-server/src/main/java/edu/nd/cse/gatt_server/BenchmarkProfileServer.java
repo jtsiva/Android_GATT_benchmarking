@@ -214,7 +214,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
      * to keep track of how many bytes have been sent and how many still need to
      * be sent.
      *
-     * NOT IMPLEMENTED
+     * TODO: implement
      *
      * @return barebones response with only buffer set
      */
@@ -250,7 +250,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
     /**
      * Calculate the loss rate:
      *
-     * NOT IMPLEMENTED
+     * TODO: implement
      *
      * @return barebones response with only buffer set
      */

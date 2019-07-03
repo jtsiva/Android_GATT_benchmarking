@@ -1,11 +1,13 @@
 package edu.nd.cse.gatt_server;
 
-import edu.nd.cse.benchmarkcommon.UiUpdate;
 import android.app.Activity;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.os.Bundle;
+
+import java.util.Date;
+import java.sql.Timestamp;
 
 /**
  * Activity that runs the gatt server. Receives operating parameters
@@ -16,20 +18,9 @@ public class BenchmarkServer extends Activity{
     /* UI elements */
     private TextView mParameters;
     private TextView mUpdates;
-    private UiUpdate mUpdater = new UiUpdate () {
-        @Override
-        public void updateText (final String text) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    mUpdates.append(text);
-                    mUpdates.append("\n");
-                }
-            });
-        }
-    };
 
-
+    /* Benchmarking Profile Server */
+    private BenchmarkProfileServer mBenchmarkServer;
 
 
     @Override
@@ -49,6 +40,31 @@ public class BenchmarkServer extends Activity{
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         //start profile
+        mBenchmarkServer = new BenchmarkProfileServer(this, new BenchmarkProfileServerCallback () {
+            @Override
+            public void onBenchmarkStart () {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Timestamp ts = new Timestamp(new Date().getTime());
+                        mUpdates.append("Benchmark started at: " + ts);
+                        mUpdates.append("\n");
+                    }
+                });
+            }
+            @Override
+            public void onBenchmarkComplete (){
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Timestamp ts = new Timestamp(new Date().getTime());
+                        mUpdates.append("Benchmark completed at: " + ts);
+                        mUpdates.append("\n");
+                    }
+                });
+                mBenchmarkServer.stop();
+            }
+        });
 
     }
 
