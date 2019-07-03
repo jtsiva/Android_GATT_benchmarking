@@ -7,4 +7,5 @@ package edu.nd.cse.gatt_server;
 public interface BenchmarkProfileServerCallback {
     public void onBenchmarkStart ();
     public void onBenchmarkComplete ();
+    public void onBenchmarkError (int code, String details);
 }

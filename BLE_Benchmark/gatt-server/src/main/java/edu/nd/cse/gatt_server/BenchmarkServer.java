@@ -52,7 +52,7 @@ public class BenchmarkServer extends Activity{
                     }
                 });
             }
-            
+
             @Override
             public void onBenchmarkComplete (){
                 runOnUiThread(new Runnable() {
@@ -64,6 +64,17 @@ public class BenchmarkServer extends Activity{
                     }
                 });
                 mBenchmarkServer.stop();
+            }
+
+            @Override
+            public void onBenchmarkError (final int code, final String details) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mUpdates.append("Error " + code + ": " + details);
+                        mUpdates.append("\n");
+                    }
+                });
             }
         });
 

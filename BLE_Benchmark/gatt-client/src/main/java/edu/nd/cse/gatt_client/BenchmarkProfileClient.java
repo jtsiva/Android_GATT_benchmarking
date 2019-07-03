@@ -128,6 +128,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
         @Override
         public void run() {
             if (mMtuState && mConnIntervalState && mDataSizeState) {
+                mCB.onBenchmarkStart();
                 //kick off benchmark
                 mBenchmarkHandler.post(goTest);
                 mBenchmarkStart = SystemClock.elapsedRealtimeNanos ();
