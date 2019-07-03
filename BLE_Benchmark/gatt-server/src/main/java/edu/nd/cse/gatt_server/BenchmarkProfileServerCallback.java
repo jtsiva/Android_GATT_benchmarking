@@ -5,4 +5,6 @@ package edu.nd.cse.gatt_server;
  * of the profile to provide updates to the application layer.
  */
 public interface BenchmarkProfileServerCallback {
+    public void onBenchmarkStart ();
+    public void onBenchmarkComplete ();
 }

@@ -6,7 +6,6 @@ import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
 import edu.nd.cse.benchmarkcommon.GattData;
 import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
 
-
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
 import android.os.SystemClock;
@@ -53,6 +52,8 @@ public class BenchmarkProfileServer extends BenchmarkProfile
     private Thread bgThread = null;
 
     private GattServer mGattServer;
+    private BenchmarkProfileServerCallback mCB;
+    private boolean mBenchmarkStarted = false;
 
     private boolean mLogToFile;
 
@@ -63,8 +64,10 @@ public class BenchmarkProfileServer extends BenchmarkProfile
      * @param logToFile - whether to log the raw timestamps to a file
      *                  or store them in a circular buffer in mem
      */
-    public BenchmarkProfileServer(Context context, boolean logToFile){
+    public BenchmarkProfileServer(Context context, boolean logToFile,
+                                  BenchmarkProfileServerCallback cb){
         mLogToFile = logToFile;
+        mCB = cb;
 
         if (mLogToFile) {
             File path = context.getExternalFilesDir(null);
@@ -82,6 +85,12 @@ public class BenchmarkProfileServer extends BenchmarkProfile
             public void connIntervalUpdate (int interval){
                 mConnInterval = interval;
             }
+
+            public void connectionUpdate (String address, int state){
+                if (0 == state) {
+                    mCB.onBenchmarkComplete();
+                }
+            }
         });
 
     }
@@ -90,8 +99,9 @@ public class BenchmarkProfileServer extends BenchmarkProfile
      * Initialize and log to file by default
      * @param context
      */
-    public BenchmarkProfileServer (Context context){
-        this(context, true);
+    public BenchmarkProfileServer (Context context,
+                                   BenchmarkProfileServerCallback cb){
+        this(context, true, cb);
     }
 
     /**
@@ -102,10 +112,10 @@ public class BenchmarkProfileServer extends BenchmarkProfile
     }
 
     /**
-     * Start the gatt server and don't stop advertising upon connection
+     * Start the gatt server and stop advertising upon connection
      */
     public void start () {
-        mGattServer.start(false);
+        mGattServer.start(true);
     }
 
     /**
@@ -172,6 +182,11 @@ public class BenchmarkProfileServer extends BenchmarkProfile
      * @return data with sender address, char uuid, and null buffer
      */
     private GattData handleTestCharacteristic (GattData data){
+        if (!mBenchmarkStarted) {
+            mCB.onBenchmarkStart();
+            mBenchmarkStarted = true;
+        }
+
         GattData response = null;
 
         if (null != data && null != data.mBuffer) {
