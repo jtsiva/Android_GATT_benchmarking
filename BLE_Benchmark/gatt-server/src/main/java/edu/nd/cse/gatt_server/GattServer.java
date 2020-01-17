@@ -274,6 +274,13 @@ public class GattServer extends BluetoothGattServerCallback {
     public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
         if (newState == BluetoothProfile.STATE_CONNECTED) {
             Log.i(TAG, "BluetoothDevice CONNECTED: " + device);
+            /*
+            Based on a comment here: https://stackoverflow.com/questions/47676988/the-device-gattserver-stops-advertising-after-connecting-to-it
+            The peripheral is supposed to stop advertising after a connection per the spec.... This
+            would keep the peripheral from connecting to multiple centrals which we know is allowed
+            by BT 4.2. However, it is clear that calling the following code led to instant
+            disconnects
+             */
 //            if (mStopAdvOnConnect) {
 //                stopAdvertising();
 //            }
