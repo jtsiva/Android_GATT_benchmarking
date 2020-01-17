@@ -130,7 +130,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     private Runnable readyToStartBenchmark = new Runnable() {
         @Override
         public void run() {
-            Log.d(TAG, "mtustate: " +  mMtuState + " connIntervalState: " + mConnIntervalState + " dataSizeState: " +  mDataSizeState);
+           // Log.d(TAG, "mtustate: " +  mMtuState + " connIntervalState: " + mConnIntervalState + " dataSizeState: " +  mDataSizeState);
             if (mMtuState && mConnIntervalState && mDataSizeState) {
                 Log.d(TAG, "Ready to start benchmark");
                 mCB.onBenchmarkStart();
@@ -202,6 +202,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * test will affect the results.
      */
     public void requestThroughput () {
+        Log.d(TAG, "Requesting throughput");
         mGattClient.handleCharacteristic(new GattData(
                         mServerAddress,
                         BenchmarkProfile.THROUGHPUT_CHAR,

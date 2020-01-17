@@ -134,8 +134,12 @@ public class GattClient extends BluetoothGattCallback
     @Override
     public GattData handleCharacteristic(GattData data) {
         if (null != data) {
+            if (null == data.mBuffer) {
+                Log.d (TAG, "Adding read request to op queue");
+            }
             mOperationQueue.add(data);
             if (mIsIdle) {
+                Log.d (TAG, "op queue is idle");
                 mIsIdle = false;
                 GattData readyData = mOperationQueue.poll();
                 performOperation(readyData);
@@ -295,6 +299,7 @@ public class GattClient extends BluetoothGattCallback
         BluetoothGattCharacteristic characteristic = service.getCharacteristic(data.mCharID);
 
         if (null == data.mBuffer) { //read
+            Log.d(TAG, "Characteristic READ");
             mConnectedDevices.get(data.mAddress).readCharacteristic(characteristic);
         }
         else { //write
