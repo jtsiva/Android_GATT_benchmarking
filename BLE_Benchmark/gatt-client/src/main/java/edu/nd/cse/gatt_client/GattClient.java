@@ -279,6 +279,7 @@ public class GattClient extends BluetoothGattCallback
      * @param device - gatt device to which a connection will be started
      */
     private void connect(BluetoothDevice device) {
+        Log.v(TAG, "connecting...");
         device.connectGatt(mContext, false, this, BluetoothDevice.TRANSPORT_LE);
     }
 
@@ -397,6 +398,12 @@ public class GattClient extends BluetoothGattCallback
                     stopScanning();
                 }
                 //gatt.requestMtu(this.mtu);
+
+                //discover services
+                if (!gatt.discoverServices()) {
+                    // Error starting service discovery.
+                    Log.e("", "error discovering services!");
+                }
             }
             else {
                 // Error connecting to device.
