@@ -17,6 +17,6 @@ public class GattData {
     public GattData (String address, UUID charID, byte[] data) {
         mAddress = address;
         mCharID = charID;
-        mBuffer = data.clone();
+        mBuffer = data == null ? null : data.clone();
     }
 }

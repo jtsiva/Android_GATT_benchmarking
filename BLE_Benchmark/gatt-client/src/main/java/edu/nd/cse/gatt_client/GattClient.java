@@ -394,7 +394,6 @@ public class GattClient extends BluetoothGattCallback
         if (newState == BluetoothGatt.STATE_CONNECTED) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 mConnectedDevices.put(gatt.getDevice().getAddress(), gatt);
-                mConnUpdater.connectionUpdate(gatt.getDevice().getAddress(), 1);
 
                 if (mStopScanningOnConnect) {
                     stopScanning();
@@ -439,6 +438,7 @@ public class GattClient extends BluetoothGattCallback
             return;
         } else {
             Log.d(TAG, "onServicesDiscovered gatt success: " +  status);
+            mConnUpdater.connectionUpdate(gatt.getDevice().getAddress(), 1);
         }
 
         final BluetoothGatt bluetoothGatt = mConnectedDevices.get(gatt.getDevice().getAddress());
@@ -446,7 +446,7 @@ public class GattClient extends BluetoothGattCallback
         //reference to each UART characteristic
         if (null == bluetoothGatt.getService(mTargetService)) {
             //connectFailure();
-            Log.e(TAG, "onServicesDiscovered failed ot get target service");
+            Log.e(TAG, "onServicesDiscovered failed to get target service");
             return;
         }
     }

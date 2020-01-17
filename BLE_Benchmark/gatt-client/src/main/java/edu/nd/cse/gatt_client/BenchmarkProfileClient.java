@@ -86,6 +86,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * @param dataSize - the amount of data to send in each packet.
      */
     public void prepare(int mtu, int interval, int dataSize){
+        Log.d(TAG, "preparing...");
         mGattClient.start(); // will scan and connect to first device
         mMtu = mtu;
         mConnInterval = interval;
@@ -129,6 +130,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     private Runnable readyToStartBenchmark = new Runnable() {
         @Override
         public void run() {
+            Log.d(TAG, "mtustate: " +  mMtuState + " connIntervalState: " + mConnIntervalState + " dataSizeState: " +  mDataSizeState);
             if (mMtuState && mConnIntervalState && mDataSizeState) {
                 Log.d(TAG, "Ready to start benchmark");
                 mCB.onBenchmarkStart();
@@ -273,11 +275,11 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      *                 1 to MTU.
      */
     private void setDataSize (int dataSize) {
-        if (0 < dataSize && dataSize <= mMtu && mMtuState) {
+        if (0 < dataSize && dataSize <= mMtu) {
             mDataSizeState = true;
+        } else {
+            mDataSizeState = false;
         }
-
-        mDataSizeState = false;
     }
 
     /**
@@ -287,6 +289,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
         @Override
         public void connectionUpdate (String address, int state){
             if (1 == state){
+                Log.d(TAG, "Connected");
                 mServerAddress = address;
 
                 setMtu (mMtu);
@@ -302,6 +305,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                         , "set MTU to " + mMtu + ", but there was an error");
             }
             else {
+                Log.d(TAG, "mtu updated!");
                 mMtuState = true;
             }
         }
@@ -314,6 +318,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                                 + ", but there was an error");
             }
             else {
+                Log.d(TAG, "Connection interval updated");
                 mConnIntervalState = true;
             }
         }
