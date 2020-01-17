@@ -56,6 +56,7 @@ public class GattClient extends BluetoothGattCallback
     private boolean mHasBTSupport;
     private boolean mStopScanningOnConnect;
     private boolean mScanStarted = false;
+    private boolean mConnecting = false;
 
     private Context mContext;
     private UUID mTargetService;
@@ -260,7 +261,7 @@ public class GattClient extends BluetoothGattCallback
         @Override
         public void onScanResult ( int callbackType, ScanResult result){
 
-            if (!(mStopScanningOnConnect && mConnectedDevices.size() > 0)) {
+            if (!(mStopScanningOnConnect && mConnectedDevices.size() > 0) && !mConnecting) {
                 if (!mConnectedDevices.containsKey(result.getDevice().getAddress())) {
                     connect(result.getDevice());
                 }
@@ -279,7 +280,8 @@ public class GattClient extends BluetoothGattCallback
      * @param device - gatt device to which a connection will be started
      */
     private void connect(BluetoothDevice device) {
-        Log.v(TAG, "connecting...");
+        Log.d(TAG, "connecting...");
+        mConnecting = true;
         device.connectGatt(mContext, false, this, BluetoothDevice.TRANSPORT_LE);
     }
 
@@ -380,7 +382,7 @@ public class GattClient extends BluetoothGattCallback
 
     /**
      * Add gatt object to hashmap for device that connects or remove if
-     * device disconnects
+     * device disconnects. Discover services after adding
      *
      * @param gatt - the gatt object to handle
      * @param status - success or fail
@@ -409,6 +411,8 @@ public class GattClient extends BluetoothGattCallback
                 // Error connecting to device.
                 //connectFailure();
             }
+
+            mConnecting = false;
         }
         else if (newState == BluetoothGatt.STATE_DISCONNECTED) {
             // Disconnected, notify callbacks of disconnection.
@@ -431,10 +435,10 @@ public class GattClient extends BluetoothGattCallback
         // Notify connection failure if service discovery failed.
         if (status == BluetoothGatt.GATT_FAILURE) {
             //connectFailure();
-            Log.e(TAG, "onServicesDiscovered gatt failure");
+            Log.e(TAG, "onServicesDiscovered gatt failure: " +  status);
             return;
         } else {
-            Log.e(TAG, "onServicesDiscovered gatt success");
+            Log.d(TAG, "onServicesDiscovered gatt success: " +  status);
         }
 
         final BluetoothGatt bluetoothGatt = mConnectedDevices.get(gatt.getDevice().getAddress());
@@ -442,7 +446,7 @@ public class GattClient extends BluetoothGattCallback
         //reference to each UART characteristic
         if (null == bluetoothGatt.getService(mTargetService)) {
             //connectFailure();
-            Log.e(TAG, "onServicesDiscovered gatt failure");
+            Log.e(TAG, "onServicesDiscovered failed ot get target service");
             return;
         }
     }
