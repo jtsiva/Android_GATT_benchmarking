@@ -220,6 +220,7 @@ public class GattServer extends BluetoothGattServerCallback {
     private void stopAdvertising() {
         if (mBluetoothLeAdvertiser == null) return;
 
+        Log.d(TAG, "Stopping advertisements");
         mBluetoothLeAdvertiser.stopAdvertising(mAdvertiseCallback);
     }
 
@@ -273,9 +274,9 @@ public class GattServer extends BluetoothGattServerCallback {
     public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
         if (newState == BluetoothProfile.STATE_CONNECTED) {
             Log.i(TAG, "BluetoothDevice CONNECTED: " + device);
-            if (mStopAdvOnConnect) {
-                stopAdvertising();
-            }
+//            if (mStopAdvOnConnect) {
+//                stopAdvertising();
+//            }
         } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
             Log.i(TAG, "BluetoothDevice DISCONNECTED: " + device);
         }

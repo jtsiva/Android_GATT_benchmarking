@@ -8,6 +8,7 @@ import edu.nd.cse.benchmarkcommon.GattData;
 import android.os.Handler;
 import android.content.Context;
 import android.os.SystemClock;
+import android.util.Log;
 
 import java.util.Random;
 
@@ -117,6 +118,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     public void beginBenchmark (long duration) {
         mRun = true;
         mBenchmarkDuration = duration * 1000000; //ms to ns
+        Log.d(TAG, "Check if ready to start");
         mPrepHandler.post(readyToStartBenchmark);
     }
 
@@ -128,6 +130,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
         @Override
         public void run() {
             if (mMtuState && mConnIntervalState && mDataSizeState) {
+                Log.d(TAG, "Ready to start benchmark");
                 mCB.onBenchmarkStart();
                 //kick off benchmark
                 mBenchmarkHandler.post(goTest);
