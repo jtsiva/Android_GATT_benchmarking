@@ -77,6 +77,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         }
 
         mGattServer = new GattServer (context, createBenchmarkService());
+        mGattServer.setCharacteristicHandler(this);
         mGattServer.setConnectionUpdateCallback(new ConnectionUpdater (){
             public void mtuUpdate(int mtu) {
                 mMtu = mtu;
@@ -192,7 +193,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         if (null != data && null != data.mBuffer) {
             mBytesReceived += data.mBuffer.length;
             mPacketsReceived += 1;
-            if (timerStarted()) {
+            if (!timerStarted()) {
                 startTiming();
             }
             else {
