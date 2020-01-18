@@ -51,7 +51,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
 
 
     //performance parameters
-    private int mMtu = 217;
+    private int mMtu = 20;
     private boolean mMtuState;
     private int mConnInterval = 40; //balanced
     private boolean mConnIntervalState;
@@ -257,8 +257,12 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * @param mtu - the maximum transmission unit to use.
      */
     private void setMtu (int mtu) {
-        mMtuState = false; //unsure if okay right now
-        mGattClient.mtuUpdate(mServerAddress, mtu);
+        if (20 == mtu){ //this is the default value for the stack, so bounce back
+            mConnUpdater.mtuUpdate(mServerAddress, mtu);
+        } else {
+            mMtuState = false; //unsure if okay right now
+            mGattClient.mtuUpdate(mServerAddress, mtu);
+        }
     }
 
     /**
