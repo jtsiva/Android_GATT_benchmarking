@@ -469,11 +469,11 @@ public class GattClient extends BluetoothGattCallback
         super.onCharacteristicWrite(gatt, characteristic, status);
 
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            Log.d(TAG,"Characteristic write successful");
+            //Log.d(TAG,"Characteristic write successful");
 
 
         } else {
-            Log.d(TAG,"Characteristic write FAILED");
+            Log.e(TAG,"Characteristic write FAILED");
         }
 
         GattData data = mOperationQueue.poll();

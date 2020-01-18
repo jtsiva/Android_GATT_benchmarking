@@ -312,11 +312,11 @@ public class GattServer extends BluetoothGattServerCallback {
                 responseNeeded, offset, value);
 
         //We don't need to do anything but acknowledge since we aren't setting any chars
-        Log.i(TAG, "Received: " + String.valueOf(value));
-        Log.i(TAG, "handler is null? " + (null == mHandler));
-        GattData gd = new GattData (device.getAddress(), characteristic.getUuid(), value);
+//        Log.i(TAG, "Received: " + String.valueOf(value));
+//        Log.i(TAG, "handler is null? " + (null == mHandler));
+
         //callback to hand data up
-        mHandler.handleCharacteristic(gd);
+        mHandler.handleCharacteristic(new GattData (device.getAddress(), characteristic.getUuid(), value));
 
         if (responseNeeded) {
             //Presumably the client's onCharacteristicWrite only gets called on receipt of

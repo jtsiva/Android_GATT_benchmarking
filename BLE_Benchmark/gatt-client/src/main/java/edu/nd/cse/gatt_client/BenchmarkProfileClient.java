@@ -231,7 +231,8 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     @Override
     public GattData handleCharacteristic (GattData data) {
         if (BenchmarkProfile.THROUGHPUT_CHAR.equals(data.mCharID)) {
-            mCB.onThroughputAvailable(Float.parseFloat(new String(data.mBuffer)));
+            Log.d(TAG, "received throughput: " + data.mBuffer);
+            mCB.onThroughputAvailable(Long.parseLong(new String(data.mBuffer)));
             data.mBuffer = null;
         }
         else if(BenchmarkProfile.LOSS_RATE_CHAR.equals(data.mCharID)) {

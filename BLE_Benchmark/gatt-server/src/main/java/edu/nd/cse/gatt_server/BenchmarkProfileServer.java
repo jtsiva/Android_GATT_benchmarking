@@ -72,9 +72,9 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         if (mLogToFile) {
             File path = context.getExternalFilesDir(null);
             setTimeStampFile(new File(path, "gatt_cap.txt"));
-
-            mTimeDiffs = new String[MAX_DIFFS];
         }
+
+        mTimeDiffs = new String[MAX_DIFFS];
 
         mGattServer = new GattServer (context, createBenchmarkService());
         mGattServer.setCharacteristicHandler(this);
@@ -202,6 +202,8 @@ public class BenchmarkProfileServer extends BenchmarkProfile
 
             response = data;
             response.mBuffer = null;
+        } else {
+            Log.w (TAG, "null data received!");
         }
 
         return response;
@@ -236,14 +238,22 @@ public class BenchmarkProfileServer extends BenchmarkProfile
     private GattData handleThroughputRequest () {
         GattData response = null;
 
-        int lastTimeIndex = (MAX_DIFFS == mDiffsIndex) ? mDiffsIndex - 1 : mDiffsIndex;
-        long bps = (mBytesReceived * 8) / (Long.parseLong(mTimeDiffs[lastTimeIndex]) - mStartTS);
-        if (0 < bps) {
-            bps = 0;
+        //if we have actually recorded time diffs
+        if (0 != mDiffsIndex){
+            int lastTimeIndex = mDiffsIndex - 1;
+            Log.d(TAG, "received " + mBytesReceived + " bytes");
+            Log.d(TAG, "elapsed time: " + Long.parseLong(mTimeDiffs[lastTimeIndex]));
+            long bps = (mBytesReceived * 8 * 1000000000) / Long.parseLong(mTimeDiffs[lastTimeIndex]);
+            Log.d(TAG, "bps: " + bps);
+            if (0 > bps) {
+                bps = 0;
+            }
+            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+            buffer.putLong(bps);
+
+            response = new GattData(null, null, buffer.array());
         }
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        buffer.putLong(bps);
-        response = new GattData(null, null, buffer.array());
+
 
         return response;
     }
@@ -302,11 +312,14 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         } else {
             diff = ts - mStartTS;
 
+
             mTimeDiffs[mDiffsIndex] = String.valueOf(diff);
+            //Log.d(TAG, "recording time difff: " +  mTimeDiffs[mDiffsIndex]);
             mDiffsIndex++;
 
             if (MAX_DIFFS == mDiffsIndex) {
                 String out = TextUtils.join("\n", mTimeDiffs);
+                Log.d(TAG, out);
                 if (null == mTimeDiffsFile) {
                     Log.w (TAG, "Trying to record times when no output file specified!");
                 } else {
