@@ -321,6 +321,8 @@ public class GattClient extends BluetoothGattCallback
      * @param mtu - the mtu size to request
      */
     public void mtuUpdate(String address, int mtu){
+        final BluetoothGatt bluetoothGatt = mConnectedDevices.get(address);
+        bluetoothGatt.requestMtu(mtu);
         mConnUpdater.mtuUpdate(address, mtu); //respond back to confirm
     }
 
@@ -453,6 +455,20 @@ public class GattClient extends BluetoothGattCallback
             //connectFailure();
             Log.e(TAG, "onServicesDiscovered failed to get target service");
             return;
+        }
+    }
+
+    /**
+     * 
+     * @param gatt
+     * @param mtu
+     * @param status
+     */
+    @Override
+    public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+        if (status == BluetoothGatt.GATT_SUCCESS) {
+            Log.i("Gatt", "MTU set to: " + String.valueOf(mtu));
+            mMtu = mtu < mMtu ? mtu : mMtu;
         }
     }
 
