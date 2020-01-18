@@ -10,6 +10,7 @@ import android.content.Context;
 import android.os.SystemClock;
 import android.util.Log;
 
+import java.nio.ByteBuffer;
 import java.util.Random;
 
 /**
@@ -231,8 +232,11 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     @Override
     public GattData handleCharacteristic (GattData data) {
         if (BenchmarkProfile.THROUGHPUT_CHAR.equals(data.mCharID)) {
-            Log.d(TAG, "received throughput: " + data.mBuffer);
-            mCB.onThroughputAvailable(Long.parseLong(new String(data.mBuffer)));
+            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+            buffer.put(data.mBuffer);
+            buffer.flip();//need flip
+
+            mCB.onThroughputAvailable(buffer.getLong());
             data.mBuffer = null;
         }
         else if(BenchmarkProfile.LOSS_RATE_CHAR.equals(data.mCharID)) {
