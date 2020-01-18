@@ -299,8 +299,6 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                 mServerAddress = address;
 
                 setMtu (mMtu);
-                setConnInterval(mConnInterval);
-                setDataSize(mDataSize);
             }
         }
 
@@ -314,6 +312,9 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                 Log.d(TAG, "mtu updated!");
                 mMtuState = true;
             }
+
+            setConnInterval(mConnInterval);
+            setDataSize(mDataSize);
         }
 
         @Override

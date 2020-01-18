@@ -315,7 +315,6 @@ public class GattClient extends BluetoothGattCallback
     /**
      * Request an mtu update
      *
-     * TODO: implement
      *
      * @param address - device from which to make the request
      * @param mtu - the mtu size to request
@@ -323,7 +322,6 @@ public class GattClient extends BluetoothGattCallback
     public void mtuUpdate(String address, int mtu){
         final BluetoothGatt bluetoothGatt = mConnectedDevices.get(address);
         bluetoothGatt.requestMtu(mtu);
-        mConnUpdater.mtuUpdate(address, mtu); //respond back to confirm
     }
 
     /**
@@ -459,16 +457,22 @@ public class GattClient extends BluetoothGattCallback
     }
 
     /**
-     * 
-     * @param gatt
-     * @param mtu
-     * @param status
+     * Report the negotiated mtu up to the profile
+     *
+     * @param gatt object to handle
+     * @param mtu negotiated mtu value
+     * @param status success or failure of mtu change
      */
     @Override
     public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+        super.onMtuChanged(gatt, mtu, status);
+
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            Log.i("Gatt", "MTU set to: " + String.valueOf(mtu));
-            mMtu = mtu < mMtu ? mtu : mMtu;
+            Log.i(TAG, "MTU set to: " + String.valueOf(mtu));
+            mConnUpdater.mtuUpdate(gatt.getDevice().getAddress(), mtu);
+        } else {
+            Log.e(TAG, "MTU change failed");
+            mConnUpdater.mtuUpdate(gatt.getDevice().getAddress(), 0); //failure
         }
     }
 
