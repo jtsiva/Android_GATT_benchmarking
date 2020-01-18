@@ -131,7 +131,7 @@ public class BenchmarkClient extends Activity{
         Log.v("gatt", "about to start!");
 
         mBenchmarkClient.prepare(); //set up testing params with default values
-        mBenchmarkClient.beginBenchmark(); //run default length of 10 seconds
+        mBenchmarkClient.beginBenchmark(40, false);
     }
 
     @Override

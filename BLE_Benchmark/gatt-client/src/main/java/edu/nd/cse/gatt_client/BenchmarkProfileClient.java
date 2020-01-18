@@ -43,7 +43,10 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     private String mServerAddress = null;
 
     private long mBenchmarkStart = 0; //nanoseconds
-    private long mBenchmarkDuration = 0; //nanoseconds
+    private long mBenchmarkDuration = 0;
+    private boolean mBenchmarkDurationIsTime;
+    private long mBenchmarkBytesSent = 0;
+
     private Handler mPrepHandler = new Handler();
     private Handler mBenchmarkHandler = new Handler();
 
@@ -105,7 +108,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * Start benchmarking for the default duration of 10 seconds
      */
     public void beginBenchmark () {
-        beginBenchmark(10000);
+        beginBenchmark(10000, true);
     }
 
     /**
@@ -113,13 +116,21 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * synchonicity here by waiting for preparation code to be
      * complete before actually beginning the benchmark. This is
      * is transparent to application as this function returns
-     * immediately.
+     * immediately. The duration can either be the duration in
+     * ms or in bytes (octets) sent
      *
-     * @param durationMS - duration (in ms) to run the benchmark
+     * @param duration - duration (in ms or bytes) to run the
+     *                 benchmark
      */
-    public void beginBenchmark (long duration) {
+    public void beginBenchmark (long duration, boolean durationIsTime) {
         mRun = true;
-        mBenchmarkDuration = duration * 1000000; //ms to ns
+        mBenchmarkDurationIsTime = durationIsTime;
+        if (mBenchmarkDurationIsTime) {
+            mBenchmarkDuration = duration * 1000000; //ms to ns
+        } else {
+            mBenchmarkDuration = duration;
+        }
+
         Log.d(TAG, "Check if ready to start");
         mPrepHandler.post(readyToStartBenchmark);
     }
@@ -164,19 +175,30 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
             byte [] b = new byte[mDataSize];
             new Random().nextBytes(b);
             GattData data = new GattData(mServerAddress, BenchmarkProfile.TEST_CHAR, b);
+            mBenchmarkBytesSent += mDataSize;
 
             mGattClient.handleCharacteristic(data);
 
             long now = SystemClock.elapsedRealtimeNanos ();
 
-            // if one more interval will not exceed the duration then post delayed
-            if ((now - mBenchmarkStart) + (mConnInterval * 1000000) < mBenchmarkDuration
-                    && mRun) {
-                mBenchmarkHandler.postDelayed(this, mConnInterval);
+            if (mBenchmarkDurationIsTime) {
+                // if one more interval will not exceed the duration then post delayed
+                if ((now - mBenchmarkStart) + (mConnInterval * 1000000) < mBenchmarkDuration
+                        && mRun) {
+                    mBenchmarkHandler.postDelayed(this, mConnInterval);
+                }
+                else {
+                    mCB.onBenchmarkComplete();
+                }
+            } else {
+                if (mBenchmarkBytesSent + mDataSize <= mBenchmarkDuration) {
+                    mBenchmarkHandler.postDelayed(this, mConnInterval);
+                }
+                else {
+                    mCB.onBenchmarkComplete();
+                }
             }
-            else {
-                mCB.onBenchmarkComplete();
-            }
+
         }
     };
 

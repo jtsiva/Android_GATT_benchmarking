@@ -254,6 +254,8 @@ public class BenchmarkProfileServer extends BenchmarkProfile
             Log.d(TAG, "long as bytes: " + buffer.array());
 
             response = new GattData(null, null, buffer.array());
+        } else {
+            response = new GattData (null, null, ByteBuffer.allocate(Long.BYTES).putLong(0).array());
         }
 
 
