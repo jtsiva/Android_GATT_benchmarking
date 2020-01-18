@@ -123,6 +123,8 @@ public class BenchmarkServer extends Activity{
 
     @Override
     protected void onDestroy() {
+
         super.onDestroy();
+        mBenchmarkServer.stop();
     }
 }

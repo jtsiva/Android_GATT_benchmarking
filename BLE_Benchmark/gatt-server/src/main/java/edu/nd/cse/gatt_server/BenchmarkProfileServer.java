@@ -344,6 +344,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         mGattServer.stop();
 
         if (mDiffsIndex > 0) {
+            Log.d(TAG, "Writing time diffs to file");
             String[] tmp = new String[mDiffsIndex];
             System.arraycopy(mTimeDiffs, 0, tmp, 0, mDiffsIndex);
             String out = TextUtils.join("\n", tmp);
