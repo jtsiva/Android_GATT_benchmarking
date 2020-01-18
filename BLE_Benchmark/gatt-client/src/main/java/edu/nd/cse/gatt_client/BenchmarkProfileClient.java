@@ -51,7 +51,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
 
 
     //performance parameters
-    private int mMtu = 20;
+    private int mMtu = 217;
     private boolean mMtuState;
     private int mConnInterval = 40; //balanced
     private boolean mConnIntervalState;

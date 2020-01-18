@@ -383,4 +383,17 @@ public class GattServer extends BluetoothGattServerCallback {
 
     }
 
+    /**
+     * Report updated mtu to profile server
+     *
+     * @param device central that has initiated change
+     * @param mtu new mtu value
+     */
+    @Override
+    public void onMtuChanged (BluetoothDevice device, int mtu) {
+        super.onMtuChanged(device, mtu);
+        Log.i("Gatt", "MTU set to: " + String.valueOf(mtu));
+        mConnUpdater.mtuUpdate(device.getAddress(), mtu);
+    }
+
 }
