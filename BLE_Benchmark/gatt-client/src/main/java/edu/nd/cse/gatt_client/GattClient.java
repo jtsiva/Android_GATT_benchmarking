@@ -31,8 +31,8 @@ import java.util.ArrayList;
 import java.util.UUID;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Class that manages the client side of the GATT I/O layer. Responsible
@@ -47,7 +47,7 @@ public class GattClient extends BluetoothGattCallback
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
     private Map<String, BluetoothGatt> mConnectedDevices = new HashMap<String, BluetoothGatt>();
-    private final Queue<GattData> mOperationQueue = new ConcurrentLinkedQueue<GattData>();
+    private final BlockingQueue<GattData> mOperationQueue = new LinkedBlockingQueue<GattData>(32);
     private boolean mIsIdle = true;
     private UiUpdate mUiUpdate = null;
     private CharacteristicHandler mCharHandler = null;
@@ -137,7 +137,12 @@ public class GattClient extends BluetoothGattCallback
             if (null == data.mBuffer) {
                 Log.d (TAG, "Adding read request to op queue");
             }
-            mOperationQueue.add(data);
+            try{
+                mOperationQueue.put(data); //blocking if full
+            }catch (InterruptedException e) {
+                //????
+            }
+
             if (mIsIdle) {
                 Log.d (TAG, "op queue is idle");
                 mIsIdle = false;
