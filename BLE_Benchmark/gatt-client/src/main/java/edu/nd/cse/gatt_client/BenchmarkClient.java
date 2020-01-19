@@ -25,6 +25,14 @@ public class BenchmarkClient extends Activity{
     /* Profile related things */
     private BenchmarkProfileClient mBenchmarkClient;
 
+    /* Default parameters */
+    private final int DEFAULT_MTU = 20;
+    private final int DEFAULT_DATA_SIZE = 20;
+    private final String DEFAULT_COMM_METHOD = "write_req";
+    private final int DEFAULT_CONN_INTERVAL = 40;
+    private final int DEFAULT_DURATION = 10000;
+    private final int DEFAULT_DURATION_IS_TIME  = 1;
+
 
     /**
      * Convenience method to write text to the screen
@@ -80,14 +88,28 @@ public class BenchmarkClient extends Activity{
 
         checkPermissions();
 
-        //Bundle receiveBundle = this.getIntent().getExtras();
-
+        Bundle receiveBundle = this.getIntent().getExtras();
+        if (null == receiveBundle) {
+            receiveBundle = new Bundle();
+        }
+        final int dataSize = receiveBundle.getInt("dataSize", DEFAULT_DATA_SIZE);
+        final int connInterval = receiveBundle.getInt("connInterval", DEFAULT_CONN_INTERVAL);
+        final int mtu = receiveBundle.getInt("mtu", DEFAULT_MTU);
+        final int duration = receiveBundle.getInt("duration", DEFAULT_DURATION);
+        final int durationIsTime = receiveBundle.getInt("durationIsTime", DEFAULT_DURATION_IS_TIME);
+        final String commMethod = receiveBundle.getString("commMethod", DEFAULT_COMM_METHOD);
 
 
         mUpdates = (TextView) findViewById(R.id.updates);
 
-        writeUpdate("Parameters:\n");
+        writeUpdate("Parameters:");
         //Here we would append a text version of all of the parameters
+        writeUpdate("\tMethod: " + commMethod);
+        writeUpdate("\tMTU: " + String.valueOf(mtu));
+        writeUpdate("\tData Size: " + String.valueOf(dataSize));
+        writeUpdate("\tConn Interval: " + String.valueOf(connInterval));
+        writeUpdate("\tDuration: " + String.valueOf(duration) + (1 == durationIsTime? "ms" : "bytes"));
+        writeUpdate("----------------------------");
 
         // Devices with a display should not go to sleep
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -128,10 +150,8 @@ public class BenchmarkClient extends Activity{
             }
         });
 
-        Log.v("gatt", "about to start!");
-
-        mBenchmarkClient.prepare(); //set up testing params with default values
-        mBenchmarkClient.beginBenchmark(3200, false);
+        mBenchmarkClient.prepare(mtu, connInterval, dataSize);
+        mBenchmarkClient.beginBenchmark(duration, 1 == durationIsTime);
     }
 
     @Override
