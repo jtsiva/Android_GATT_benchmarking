@@ -268,6 +268,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
             buffer.put(data.mBuffer);
             buffer.flip();//need flip
             long measurement = buffer.getLong();
+            Log.d(TAG, "measurement: " + measurement);
 
             if (-1 != measurement) {
                 mServerLatency[mServerLatencyIndex] = measurement;
@@ -343,6 +344,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
             if (1 == state){
                 Log.d(TAG, "Connected");
                 mLatencyStartup = SystemClock.elapsedRealtimeNanos () - mStartScanning;
+                mCB.onStartupLatencyAvailable (mLatencyStartup);
 
                 mServerAddress = address;
 

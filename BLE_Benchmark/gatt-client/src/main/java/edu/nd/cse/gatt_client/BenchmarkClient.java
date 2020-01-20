@@ -134,6 +134,11 @@ public class BenchmarkClient extends Activity{
                 writeUpdate("Start-up latency: " + startLatency);
             }
 
+            @Overrride
+            public void onBytesSentAvailable (long bytesSent) {
+                writeUpdate("Sent " + bytesSent + " bytes sent");
+            }
+
             @Override
             public void onRawDataAvailable (String [] data){
                 //nothing

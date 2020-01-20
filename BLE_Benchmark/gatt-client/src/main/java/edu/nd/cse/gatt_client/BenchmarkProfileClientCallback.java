@@ -11,6 +11,8 @@ public interface BenchmarkProfileClientCallback {
 
     public void onRawDataAvailable (String [] data);
 
+    public void onBytesSentAvailable (long bytesSent);
+
     public void onStartupLatencyAvailable (float startLatency);
 
     public void onThroughputAvailable (float throughput);

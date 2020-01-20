@@ -541,5 +541,13 @@ public class GattClient extends BluetoothGattCallback
         else {
             Log.w(TAG, "Failed reading characteristic " + characteristic.getUuid().toString());
         }
+
+        GattData data = mOperationQueue.poll();
+
+        if (null == data) { //empty!
+            mIsIdle = true;
+        } else {
+            performOperation(data);
+        }
     }
 }
