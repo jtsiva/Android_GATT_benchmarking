@@ -238,8 +238,9 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     public void requestThroughput () {
         Log.d(TAG, "Requesting throughput");
         long bps = 0;
-        if (0 < mServerLatencyIndex) {
-            bps = (mBenchmarkBytesSent * 8 * 1000000000) / mServerLatency[mServerLatencyIndex];
+        int lastIndex = mServerLatencyIndex - 1 ;
+        if (0 <= lastIndex) {
+            bps = (mBenchmarkBytesSent * 8 * 1000000000) / mServerLatency[lastIndex];
         }
         mCB.onThroughputAvailable(bps);
     }
@@ -249,7 +250,9 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      *
      */
     public void requestLatencyMeasurements () {
-
+        mGattClient.handleCharacteristic(new GattData(mServerAddress,
+                BenchmarkProfile.LATENCY_CHAR,
+                null));
     }
 
     /**
@@ -261,7 +264,19 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     @Override
     public GattData handleCharacteristic (GattData data) {
         if (BenchmarkProfile.LATENCY_CHAR.equals(data.mCharID)) {
-            //do things
+            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+            buffer.put(data.mBuffer);
+            buffer.flip();//need flip
+            long measurement = buffer.getLong();
+
+            if (-1 != measurement) {
+                mServerLatency[mServerLatencyIndex] = measurement;
+                ++mServerLatencyIndex;
+
+                requestLatencyMeasurements();
+            } else {
+                mCB.onLatencyMeasurementsAvailable(mOpLatency, mServerLatency);
+            }
         }else if(BenchmarkProfile.TEST_CHAR.equals(data.mCharID)){
             ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
             buffer.put(data.mBuffer);

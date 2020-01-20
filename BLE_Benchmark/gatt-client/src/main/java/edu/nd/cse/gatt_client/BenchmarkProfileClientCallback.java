@@ -11,11 +11,13 @@ public interface BenchmarkProfileClientCallback {
 
     public void onRawDataAvailable (String [] data);
 
+    public void onStartupLatencyAvailable (float startLatency);
+
     public void onThroughputAvailable (float throughput);
 
     public void onLossRateAvailable (float lossRate);
 
-    public void onLatencyMeasurementsAvailable (long [] measurements);
+    public void onLatencyMeasurementsAvailable (long [] clientMeasurements, long [] serverMeasurements);
 
     public void onBenchmarkError (int code, String details);
 }

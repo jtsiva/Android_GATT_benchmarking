@@ -126,7 +126,12 @@ public class BenchmarkClient extends Activity{
                 Timestamp ts = new Timestamp(new Date().getTime());
                 writeUpdate("Benchmark completed at: " + ts);
 
-                mBenchmarkClient.requestThroughput();
+                mBenchmarkClient.requestLatencyMeasurements();
+            }
+
+            @Override
+            public void onStartupLatencyAvailable (final float startLatency){
+                writeUpdate("Start-up latency: " + startLatency);
             }
 
             @Override
@@ -150,8 +155,10 @@ public class BenchmarkClient extends Activity{
             }
 
             @Override
-            public void onLatencyMeasurementsAvailable (final long [] measurements) {
-                writeUpdate(measurements.length + " measurements available");
+            public void onLatencyMeasurementsAvailable (final long [] clientMeasurements,
+                                                        final long [] serverMeasurements) {
+                writeUpdate(clientMeasurements.length + " client measurements available");
+                writeUpdate(serverMeasurements.length + " client measurements available");
             }
         });
 
