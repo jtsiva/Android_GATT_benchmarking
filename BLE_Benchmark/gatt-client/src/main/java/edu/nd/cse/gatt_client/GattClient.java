@@ -141,6 +141,7 @@ public class GattClient extends BluetoothGattCallback
                 mOperationQueue.put(data); //blocking if full
             }catch (InterruptedException e) {
                 //????
+                Log.w(TAG, "Queue put operation was interrupted");
             }
 
             if (mIsIdle) {

@@ -27,9 +27,10 @@ import java.util.Random;
  * - set MTU
  * - set connection priority (interval)
  * - set data size
- * - get raw timestamps
- * - get throughput
+ * - get sending side timestamps
+ * - get receiver side timestamps
  * - get loss rate
+ * - get throughput
  *
  * Assumes that only ONE connection will be made. The majority of the
  * interaction with the profile is asynchronous--fitting with how the
@@ -42,18 +43,24 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     private BenchmarkProfileClientCallback mCB;
     private String mServerAddress = null;
 
-    private long mBenchmarkStart = 0; //nanoseconds
-    private long mBenchmarkDuration = 0;
-    private boolean mBenchmarkDurationIsTime;
-    private long mBenchmarkBytesSent = 0;
 
     private Handler mPrepHandler = new Handler();
     private Handler mBenchmarkHandler = new Handler();
 
     private boolean mRun;
 
+    /* Benchmark-related variables*/
+    private long mBenchmarkStart = 0; //nanoseconds
+    private long mBenchmarkDuration = 0;
+    private boolean mBenchmarkDurationIsTime;
+    private long mBenchmarkBytesSent = 0;
 
-    //performance parameters
+    private long mStartScanning = 0;
+    private long mLatencyStartup = 0;
+    private long mOpReturn[] = new long[16000];
+
+
+    /* performance parameters */
     private int mMtu = 20;
     private boolean mMtuState;
     private int mConnInterval = 40; //balanced
@@ -91,6 +98,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      */
     public void prepare(int mtu, int interval, int dataSize){
         Log.d(TAG, "preparing...");
+        mStartScanning = SystemClock.elapsedRealtimeNanos ();
         mGattClient.start(); // will scan and connect to first device
         mMtu = mtu;
         mConnInterval = interval;
@@ -322,6 +330,8 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
         public void connectionUpdate (String address, int state){
             if (1 == state){
                 Log.d(TAG, "Connected");
+                mLatencyStartup = SystemClock.elapsedRealtimeNanos () - mStartScanning;
+
                 mServerAddress = address;
 
                 setMtu (mMtu);
