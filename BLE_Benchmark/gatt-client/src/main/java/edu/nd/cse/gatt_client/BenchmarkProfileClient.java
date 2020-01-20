@@ -200,6 +200,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                 }
                 else {
                     mCB.onBenchmarkComplete();
+                    mCB.onBytesSentAvailable(mBenchmarkBytesSent);
                 }
             } else {
                 if (mBenchmarkBytesSent + mDataSize <= mBenchmarkDuration) {
@@ -207,6 +208,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                 }
                 else {
                     mCB.onBenchmarkComplete();
+                    mCB.onBytesSentAvailable(mBenchmarkBytesSent);
                 }
             }
 
@@ -268,7 +270,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
             buffer.put(data.mBuffer);
             buffer.flip();//need flip
             long measurement = buffer.getLong();
-            Log.d(TAG, "measurement: " + measurement);
+            //Log.d(TAG, "measurement: " + measurement);
 
             if (-1 != measurement) {
                 mServerLatency[mServerLatencyIndex] = measurement;
@@ -276,7 +278,11 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
 
                 requestLatencyMeasurements();
             } else {
-                mCB.onLatencyMeasurementsAvailable(mOpLatency, mServerLatency);
+                long [] opLatency = new long [mLatencyIndex];
+                long [] serverLatency = new long [mServerLatencyIndex];
+                System.arraycopy(mOpLatency, 0, opLatency, 0, opLatency.length);
+                System.arraycopy(mServerLatency, 0, serverLatency, 0, serverLatency.length);
+                mCB.onLatencyMeasurementsAvailable(opLatency, serverLatency);
             }
         }else if(BenchmarkProfile.TEST_CHAR.equals(data.mCharID)){
             ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);

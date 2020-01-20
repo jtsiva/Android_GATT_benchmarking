@@ -134,7 +134,7 @@ public class BenchmarkClient extends Activity{
                 writeUpdate("Start-up latency: " + startLatency);
             }
 
-            @Overrride
+            @Override
             public void onBytesSentAvailable (long bytesSent) {
                 writeUpdate("Sent " + bytesSent + " bytes sent");
             }
@@ -163,7 +163,7 @@ public class BenchmarkClient extends Activity{
             public void onLatencyMeasurementsAvailable (final long [] clientMeasurements,
                                                         final long [] serverMeasurements) {
                 writeUpdate(clientMeasurements.length + " client measurements available");
-                writeUpdate(serverMeasurements.length + " client measurements available");
+                writeUpdate(serverMeasurements.length + " server measurements available");
             }
         });
 

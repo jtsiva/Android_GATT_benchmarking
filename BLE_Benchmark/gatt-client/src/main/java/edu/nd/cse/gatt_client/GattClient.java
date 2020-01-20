@@ -139,7 +139,7 @@ public class GattClient extends BluetoothGattCallback
     public GattData handleCharacteristic(GattData data) {
         if (null != data) {
             if (null == data.mBuffer) {
-                Log.d (TAG, "Adding read request to op queue");
+                //Log.d (TAG, "Adding read request to op queue");
             }
             try{
                 mOperationQueue.put(data); //blocking if full
@@ -309,7 +309,7 @@ public class GattClient extends BluetoothGattCallback
         BluetoothGattCharacteristic characteristic = service.getCharacteristic(data.mCharID);
 
         if (null == data.mBuffer) { //read
-            Log.d(TAG, "Characteristic READ");
+            //Log.d(TAG, "Characteristic READ");
             mConnectedDevices.get(data.mAddress).readCharacteristic(characteristic);
         }
         else { //write
