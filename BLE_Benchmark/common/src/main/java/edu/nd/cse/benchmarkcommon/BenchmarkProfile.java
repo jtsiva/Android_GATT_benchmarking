@@ -34,9 +34,8 @@ import java.util.UUID;
  * - set MTU (x)
  * - set connection priority (interval) (x)
  * - set data size (x)
- * - get raw timestamps (x)
- * - get throughput (x)
- * - get loss rate (x)
+ * - get timestamps (x)
+ * - get netstring data (x)
  *
  * Note that the (x) in the above lists indicates required interaction with at
  * least one other device.
@@ -58,16 +57,13 @@ public class BenchmarkProfile {
     //benchmarking. Note that querying these chars DURING the benchmark WILL effect the
     //the results.
 
-    //used to stream inter-packet timestamps back to client (string)
+    //used to stream data back to client (string)
     //formatted as netstring: [num bytes].[bytes]
     //characteristic must be made available, but does not need to be implemented
     //if not implemented simply return a single byte: 0
     public static UUID RAW_DATA_CHAR = UUID.fromString("00000004-0000-1000-8000-00805F9B34FB");
 
-    //compute and return the throughput in bits per second (int)
-    public static UUID THROUGHPUT_CHAR = UUID.fromString("00000005-0000-1000-8000-00805F9B34FB");
+    //return every latency measurement--1 per request. Send -1 if no (more) data available
+    public static UUID LATENCY_CHAR = UUID.fromString("00000005-0000-1000-8000-00805F9B34FB");
 
-    //using the connection interval, mtu, and data size, compute and return the loss rate as a
-    //percentage (float)
-    public static UUID LOSS_RATE_CHAR = UUID.fromString("00000006-0000-1000-8000-00805F9B34FB");
 }

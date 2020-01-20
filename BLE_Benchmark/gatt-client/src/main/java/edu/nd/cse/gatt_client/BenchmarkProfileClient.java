@@ -57,7 +57,8 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
 
     private long mStartScanning = 0;
     private long mLatencyStartup = 0;
-    private long mOpReturn[] = new long[16000];
+    private long mOpLatency[] = new long[16000];
+    private int mLatencyIndex = 0;
 
 
     /* performance parameters */
@@ -255,7 +256,6 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     /**
      * Match the incoming message to the appropriate callback
      *
-     * TODO: implement handling for raw data
      *
      * @param data - the gatt data from the gatt layer
      */
@@ -268,12 +268,18 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
 
             mCB.onThroughputAvailable(buffer.getLong());
             data.mBuffer = null;
-        }
-        else if(BenchmarkProfile.LOSS_RATE_CHAR.equals(data.mCharID)) {
+        } else if(BenchmarkProfile.LOSS_RATE_CHAR.equals(data.mCharID)) {
             mCB.onLossRateAvailable(Float.parseFloat(new String(data.mBuffer)));
             data.mBuffer = null;
-        }
-        else { //we can't handle this so return null
+        }else if(BenchmarkProfile.TEST_CHAR.equals(data.mCharID)){
+            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+            buffer.put(data.mBuffer);
+            buffer.flip();//need flip
+            mOpLatency[mLatencyIndex] = buffer.getLong();
+            ++mLatencyIndex;
+
+            data.mBuffer = null;
+        }else { //we can't handle this so return null
             data = null;
         }
 

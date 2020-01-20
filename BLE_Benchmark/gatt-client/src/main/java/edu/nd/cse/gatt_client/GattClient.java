@@ -24,9 +24,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.ParcelUuid;
+import android.os.SystemClock;
 import android.util.Log;
 import android.content.Context;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.HashMap;
@@ -57,6 +59,8 @@ public class GattClient extends BluetoothGattCallback
     private boolean mStopScanningOnConnect;
     private boolean mScanStarted = false;
     private boolean mConnecting = false;
+
+    private long mOpInit = 0;
 
     private Context mContext;
     private UUID mTargetService;
@@ -309,6 +313,7 @@ public class GattClient extends BluetoothGattCallback
             mConnectedDevices.get(data.mAddress).readCharacteristic(characteristic);
         }
         else { //write
+            mOpInit = SystemClock.elapsedRealtimeNanos ();
             characteristic.setValue(data.mBuffer);
             mConnectedDevices.get(data.mAddress).writeCharacteristic(characteristic);
         }
@@ -496,7 +501,10 @@ public class GattClient extends BluetoothGattCallback
 
         if (status == BluetoothGatt.GATT_SUCCESS) {
             //Log.d(TAG,"Characteristic write successful");
-
+            long timeDiff = SystemClock.elapsedRealtimeNanos() - mOpInit;
+            mCharHandler.handleCharacteristic (new GattData(gatt.getDevice().getAddress(),
+                    characteristic.getUuid(),
+                    ByteBuffer.allocate(Long.BYTES).putLong(timeDiff).array()));
 
         } else {
             Log.e(TAG,"Characteristic write FAILED");
