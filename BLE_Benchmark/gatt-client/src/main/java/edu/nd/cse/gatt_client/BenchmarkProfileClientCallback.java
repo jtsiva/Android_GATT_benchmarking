@@ -15,5 +15,7 @@ public interface BenchmarkProfileClientCallback {
 
     public void onLossRateAvailable (float lossRate);
 
+    public void onLatencyMeasurementsAvailable (long [] measurements);
+
     public void onBenchmarkError (int code, String details);
 }

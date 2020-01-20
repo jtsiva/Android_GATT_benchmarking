@@ -148,6 +148,11 @@ public class BenchmarkClient extends Activity{
             public void onBenchmarkError (final int code, final String details) {
                 writeUpdate("Error " + code + ": " + details);
             }
+
+            @Override
+            public void onLatencyMeasurementsAvailable (final long [] measurements) {
+                writeUpdate(measurements.length + " measurements available");
+            }
         });
 
         mBenchmarkClient.prepare(mtu, connInterval, dataSize);

@@ -39,42 +39,33 @@ public class BenchmarkProfileServer extends BenchmarkProfile
                                     implements CharacteristicHandler {
     private static final String TAG = BenchmarkProfileServer.class.getSimpleName();
 
-    private String [] mTimeDiffs; //array to hold the delta between packet ends
+    private long [] mTimeDiffs; //array to hold the delta between packet ends
     private long mStartTS = 0; //timestamp from when we're told to start timing
     private int mDiffsIndex = 0;
-    private final int MAX_DIFFS = 1000;
+    private int mSentDiffsIndex = 0;
+    private final int MAX_DIFFS = 16000;
     private long mBytesReceived = 0;
     private long mPacketsReceived = 0;
     private int mMtu = 0;
     private int mConnInterval = 0;
 
-    private File mTimeDiffsFile = null;
-    private Thread bgThread = null;
-
     private GattServer mGattServer;
     private BenchmarkProfileServerCallback mCB;
     private boolean mBenchmarkStarted = false;
 
-    private boolean mLogToFile;
 
     /**
      * Initialize the time diffs array and gatt server
-     * TODO: add boolean for logging and change logging procedure
+     *
      * @param context - application context
      * @param logToFile - whether to log the raw timestamps to a file
      *                  or store them in a circular buffer in mem
      */
-    public BenchmarkProfileServer(Context context, boolean logToFile,
+    public BenchmarkProfileServer(Context context,
                                   BenchmarkProfileServerCallback cb){
-        mLogToFile = logToFile;
         mCB = cb;
 
-        if (mLogToFile) {
-            File path = context.getExternalFilesDir(null);
-            setTimeStampFile(new File(path, "gatt_cap.txt"));
-        }
-
-        mTimeDiffs = new String[MAX_DIFFS];
+        mTimeDiffs = new long[MAX_DIFFS];
 
         mGattServer = new GattServer (context, createBenchmarkService());
         mGattServer.setCharacteristicHandler(this);
@@ -96,14 +87,6 @@ public class BenchmarkProfileServer extends BenchmarkProfile
 
     }
 
-    /**
-     * Initialize and log to file by default
-     * @param context
-     */
-    public BenchmarkProfileServer (Context context,
-                                   BenchmarkProfileServerCallback cb){
-        this(context, true, cb);
-    }
 
     /**
      * Start the gatt server
@@ -133,16 +116,12 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         BluetoothGattCharacteristic rawDataChar = new BluetoothGattCharacteristic(BenchmarkProfile.RAW_DATA_CHAR,
                 BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
 
-        BluetoothGattCharacteristic throughputChar = new BluetoothGattCharacteristic(BenchmarkProfile.THROUGHPUT_CHAR,
-                BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
-
-        BluetoothGattCharacteristic lossRateChar = new BluetoothGattCharacteristic(BenchmarkProfile.LOSS_RATE_CHAR,
+        BluetoothGattCharacteristic latencyChar = new BluetoothGattCharacteristic(BenchmarkProfile.LATENCY_CHAR,
                 BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
 
         service.addCharacteristic (writeChar);
         service.addCharacteristic (rawDataChar);
-        service.addCharacteristic (throughputChar);
-        service.addCharacteristic (lossRateChar);
+        service.addCharacteristic (latencyChar);
 
         return service;
     }
@@ -166,11 +145,8 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         else if (BenchmarkProfile.RAW_DATA_CHAR.equals(data.mCharID)){
             response = handleRawDataRequest();
         }
-        else if (BenchmarkProfile.THROUGHPUT_CHAR.equals(data.mCharID)){
-            response = handleThroughputRequest();
-        }
-        else if (BenchmarkProfile.LOSS_RATE_CHAR.equals(data.mCharID)){
-            response = handleLossRateRequest();
+        else if (BenchmarkProfile.LATENCY_CHAR.equals(data.mCharID)){
+            response = handleLatencyRequest();
         }
 
         return response;
@@ -230,6 +206,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
     }
 
     /**
+     * DEPRACATED
      * Calculate the bits per second as of the last operation on the
      * test characteristic
      *
@@ -242,8 +219,8 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         if (0 != mDiffsIndex){
             int lastTimeIndex = mDiffsIndex - 1;
             Log.d(TAG, "received " + mBytesReceived + " bytes");
-            Log.d(TAG, "elapsed time: " + Long.parseLong(mTimeDiffs[lastTimeIndex]));
-            long bps = (mBytesReceived * 8 * 1000000000) / Long.parseLong(mTimeDiffs[lastTimeIndex]);
+            Log.d(TAG, "elapsed time: " + mTimeDiffs[lastTimeIndex]);
+            long bps = (mBytesReceived * 8 * 1000000000) / mTimeDiffs[lastTimeIndex];
             Log.d(TAG, "bps: " + bps);
             if (0 > bps) {
                 bps = 0;
@@ -263,29 +240,25 @@ public class BenchmarkProfileServer extends BenchmarkProfile
     }
 
     /**
-     * Calculate the loss rate:
-     *
-     * TODO: implement
+     * Return the latency timestamps, 1 read at a time until all
+     * timestamps have been sent. When no more data is available, send
+     * -1
      *
      * @return barebones response with only buffer set
      */
-    private GattData handleLossRateRequest () {
-        GattData response = null;
+    private GattData handleLatencyRequest () {
+        long returnVal = -1;
 
-        //calculate the loss rate using known information
+        if (mSentDiffsIndex < mDiffsIndex) {
+            returnVal = mTimeDiffs[mSentDiffsIndex];
+            ++mSentDiffsIndex;
+        }
 
-        return response;
+        return new GattData (null,
+                null,
+                ByteBuffer.allocate(Long.BYTES).putLong(returnVal).array());
     }
 
-    /**
-     * Set the output file for writing the time diffs
-     * @param file - the output file
-     */
-    private void setTimeStampFile (File file) {
-        mTimeDiffsFile = file;
-        bgThread = new Thread(new SaveToFileRunnable(mTimeDiffsFile, "inter-packet_time\n".getBytes(), false));
-        bgThread.start();
-    }
 
     /**
      * Grab the time stamp so that we can track the duration of an event
@@ -304,7 +277,6 @@ public class BenchmarkProfileServer extends BenchmarkProfile
      * Record the time difference from when startTiming() was called. If we
      * have filled the array then write the array to a file (if the file has
      * been set).
-     * TODO: alter to choose between circular buffer and file
      */
     private void recordTimeDiff() {
         long ts = SystemClock.elapsedRealtimeNanos();
@@ -316,53 +288,20 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         } else {
             diff = ts - mStartTS;
 
-
-            mTimeDiffs[mDiffsIndex] = String.valueOf(diff);
+            mTimeDiffs[mDiffsIndex] = diff;
             //Log.d(TAG, "recording time difff: " +  mTimeDiffs[mDiffsIndex]);
-            mDiffsIndex++;
+            ++mDiffsIndex;
 
-            if (MAX_DIFFS == mDiffsIndex) {
-                String out = TextUtils.join("\n", mTimeDiffs);
-                Log.d(TAG, out);
-                if (null == mTimeDiffsFile) {
-                    Log.w (TAG, "Trying to record times when no output file specified!");
-                } else {
-                    bgThread = new Thread(new SaveToFileRunnable(mTimeDiffsFile, out.getBytes(), true));
-                    bgThread.start();
-                }
-
-                mDiffsIndex = 0;
-            }
         }
 
     }
 
     /**
-     * Stop the gatt server and write any data collected to a file. This is a
-     * clean up function that is intended to be called before the application
-     * closes.
+     * Stop the gatt server. This is a clean up function that is intended to
+     * be called before the application closes.
      */
     public void stop() {
         mGattServer.stop();
-
-        if (mDiffsIndex > 0) {
-            Log.d(TAG, "Writing time diffs to file");
-            String[] tmp = new String[mDiffsIndex];
-            System.arraycopy(mTimeDiffs, 0, tmp, 0, mDiffsIndex);
-            String out = TextUtils.join("\n", tmp);
-
-            if (null == mTimeDiffsFile) {
-                Log.w (TAG, "Trying to record times when no output file specified!");
-            } else {
-                bgThread = new Thread(new SaveToFileRunnable(mTimeDiffsFile, out.getBytes(), true));
-                bgThread.start();
-                try {
-                    bgThread.join();
-                } catch (InterruptedException ex) {
-                    //nothing--move along
-                }
-            }
-        }
     }
 
 }

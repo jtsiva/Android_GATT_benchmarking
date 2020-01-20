@@ -58,7 +58,9 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     private long mStartScanning = 0;
     private long mLatencyStartup = 0;
     private long mOpLatency[] = new long[16000];
+    private long mServerLatency[] = new long[16000];
     private int mLatencyIndex = 0;
+    private int mServerLatencyIndex = 0;
 
 
     /* performance parameters */
@@ -235,22 +237,19 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      */
     public void requestThroughput () {
         Log.d(TAG, "Requesting throughput");
-        mGattClient.handleCharacteristic(new GattData(
-                        mServerAddress,
-                        BenchmarkProfile.THROUGHPUT_CHAR,
-                        null));
+        long bps = 0;
+        if (0 < mServerLatencyIndex) {
+            bps = (mBenchmarkBytesSent * 8 * 1000000000) / mServerLatency[mServerLatencyIndex];
+        }
+        mCB.onThroughputAvailable(bps);
     }
 
     /**
-     * Request the loss rate from the benchmark. Calling this during the
-     * test will affect the results.
+     * Request the latency measurements from the server
      *
      */
-    public void requestLossRate () {
-        mGattClient.handleCharacteristic(new GattData(
-                mServerAddress,
-                BenchmarkProfile.LOSS_RATE_CHAR,
-                null));
+    public void requestLatencyMeasurements () {
+
     }
 
     /**
@@ -261,16 +260,8 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      */
     @Override
     public GattData handleCharacteristic (GattData data) {
-        if (BenchmarkProfile.THROUGHPUT_CHAR.equals(data.mCharID)) {
-            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-            buffer.put(data.mBuffer);
-            buffer.flip();//need flip
-
-            mCB.onThroughputAvailable(buffer.getLong());
-            data.mBuffer = null;
-        } else if(BenchmarkProfile.LOSS_RATE_CHAR.equals(data.mCharID)) {
-            mCB.onLossRateAvailable(Float.parseFloat(new String(data.mBuffer)));
-            data.mBuffer = null;
+        if (BenchmarkProfile.LATENCY_CHAR.equals(data.mCharID)) {
+            //do things
         }else if(BenchmarkProfile.TEST_CHAR.equals(data.mCharID)){
             ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
             buffer.put(data.mBuffer);
