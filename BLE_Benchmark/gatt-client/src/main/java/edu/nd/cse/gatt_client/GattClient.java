@@ -531,7 +531,7 @@ public class GattClient extends BluetoothGattCallback
      */
     @Override
     public void onCharacteristicRead (BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-        super.onCharacteristicRead(gatt, characteristic, status);
+        //super.onCharacteristicRead(gatt, characteristic, status);
 
         if (status == BluetoothGatt.GATT_SUCCESS) {
             mCharHandler.handleCharacteristic(new GattData(gatt.getDevice().getAddress(),

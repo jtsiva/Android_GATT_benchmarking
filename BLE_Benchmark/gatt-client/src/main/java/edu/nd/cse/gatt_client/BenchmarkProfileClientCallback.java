@@ -13,7 +13,7 @@ public interface BenchmarkProfileClientCallback {
 
     public void onBytesSentAvailable (long bytesSent);
 
-    public void onStartupLatencyAvailable (float startLatency);
+    public void onStartupLatencyAvailable (long startLatency);
 
     public void onThroughputAvailable (float throughput);
 

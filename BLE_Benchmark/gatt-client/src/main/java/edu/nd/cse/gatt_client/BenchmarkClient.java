@@ -1,5 +1,7 @@
 package edu.nd.cse.gatt_client;
 
+import edu.nd.cse.benchmarkcommon.SaveToFileRunnable;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -10,9 +12,12 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.os.Bundle;
+import android.os.Build;
 
+import java.io.File;
 import java.sql.Timestamp;
 import java.util.Date;
+
 
 /**
  * Activity that runs the client side of the BLE benchmark
@@ -32,6 +37,8 @@ public class BenchmarkClient extends Activity{
     private final int DEFAULT_CONN_INTERVAL = 40;
     private final int DEFAULT_DURATION = 10000;
     private final int DEFAULT_DURATION_IS_TIME  = 1;
+
+    private Thread mBgThread = null;
 
 
     /**
@@ -81,6 +88,92 @@ public class BenchmarkClient extends Activity{
     }
 
 
+    /**
+     * Write the recorded start-up latency to a file
+     *
+     * @param mtu the link layer maximum transmission unit used for the test
+     * @param comm_method the method of communication used for the test
+     * @param latencyStartup the reported start-up latency
+     */
+    private void writeStartupLatencyToFile(
+                                    int mtu, String comm_method,
+                                    long latencyStartup) {
+
+        File file = new File(this.getExternalFilesDir(null), "latency_startup.csv");
+        StringBuilder out = new StringBuilder("device_type_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_startup\n");
+        out.append(Build.ID + "," + Build.BRAND +", 4.2, unknown, " + String.valueOf(mtu)
+                + ", " + comm_method + "," + String.valueOf(latencyStartup) +
+                "\n");
+
+        mBgThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
+        mBgThread.start();
+    }
+
+    /**
+     * Write the recorded payload latency to a file
+     *
+     * @param mtu the link layer maximum transmission unit used for the test
+     * @param comm_method the method of communication used for the test
+     * @param latencyPayload
+     */
+    private void writePayloadLatencyToFile (
+                                            int mtu, String comm_method,
+                                            long latencyPayload) {
+        File file = new File(this.getExternalFilesDir(null), "latency_payload.csv");
+        StringBuilder out = new StringBuilder("device_type_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_payload\n");
+        out.append(Build.ID + "," + Build.BRAND +", 4.2, unknown, " + String.valueOf(mtu)
+                + ", " + comm_method + "," + String.valueOf(latencyPayload) +
+                "\n");
+
+        mBgThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
+        mBgThread.start();
+    }
+
+    /**
+     * Write all of the recorded op latencies to a file
+     *
+     * @param mtu the link layer maximum transmission unit used for the test
+     * @param comm_method the method of communication used for the test
+     * @param opLatency the times from the initiation of an op to its return
+     */
+    private void writeOpLatencyToFile (
+                                            int mtu, String comm_method,
+                                            long [] opLatency) {
+        File file = new File(this.getExternalFilesDir(null), "latency_op_return.csv");
+        StringBuilder out = new StringBuilder("device_type_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_op_return\n");
+
+        for (long time : opLatency) {
+            out.append(Build.ID + "," + Build.BRAND + ", 4.2, unknown, " + String.valueOf(mtu)
+                    + ", " + comm_method + "," + String.valueOf(time) +
+                    "\n");
+        }
+        mBgThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
+        mBgThread.start();
+    }
+
+    /**
+     * Write all of the recorded jitter measurements to a file
+     *
+     * @param mtu the link layer maximum transmission unit used for the test
+     * @param comm_method the method of communication used for the test
+     * @param jitter the timestamps (since the start) of consecutive messages
+     */
+    private void writeJitterToFile (
+                                       int mtu, String comm_method,
+                                       long [] jitter) {
+        File file = new File(this.getExternalFilesDir(null), "jitter.csv");
+        StringBuilder out = new StringBuilder("device_type_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, jitter\n");
+
+        for (long time : jitter) {
+            out.append(Build.ID + "," + Build.BRAND + ", 4.2, unknown, " + String.valueOf(mtu)
+                    + ", " + comm_method + "," + String.valueOf(time) +
+                    "\n");
+        }
+        mBgThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
+        mBgThread.start();
+    }
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -124,14 +217,15 @@ public class BenchmarkClient extends Activity{
             @Override
             public void onBenchmarkComplete (){
                 Timestamp ts = new Timestamp(new Date().getTime());
-                writeUpdate("Benchmark completed at: " + ts);
+                writeUpdate("Benchmark ended at: " + ts);
 
                 mBenchmarkClient.requestLatencyMeasurements();
             }
 
             @Override
-            public void onStartupLatencyAvailable (final float startLatency){
+            public void onStartupLatencyAvailable (final long startLatency){
                 writeUpdate("Start-up latency: " + startLatency);
+                writeStartupLatencyToFile (mtu, commMethod, startLatency);
             }
 
             @Override
@@ -164,6 +258,11 @@ public class BenchmarkClient extends Activity{
                                                         final long [] serverMeasurements) {
                 writeUpdate(clientMeasurements.length + " client measurements available");
                 writeUpdate(serverMeasurements.length + " server measurements available");
+                writeUpdate("Writing results to file...");
+                writePayloadLatencyToFile(mtu, commMethod, serverMeasurements[serverMeasurements.length - 1]);
+                writeOpLatencyToFile(mtu, commMethod, clientMeasurements);
+                writeJitterToFile(mtu, commMethod, serverMeasurements);
+
             }
         });
 
