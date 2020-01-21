@@ -17,6 +17,7 @@ import android.os.Build;
 import java.io.File;
 import java.sql.Timestamp;
 import java.util.Date;
+import java.text.SimpleDateFormat;
 
 
 /**
@@ -98,8 +99,8 @@ public class BenchmarkClient extends Activity{
     private void writeStartupLatencyToFile(
                                     int mtu, String comm_method,
                                     long latencyStartup) {
-
-        File file = new File(this.getExternalFilesDir(null), "latency_startup.csv");
+        String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
+        File file = new File(this.getExternalFilesDir(null), "latency_startup-" + timeSuffix + ".csv");
         StringBuilder out = new StringBuilder("device_type_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_startup\n");
         out.append(Build.ID + "," + Build.BRAND +", 4.2, unknown, " + String.valueOf(mtu)
                 + ", " + comm_method + "," + String.valueOf(latencyStartup) +
@@ -119,7 +120,8 @@ public class BenchmarkClient extends Activity{
     private void writePayloadLatencyToFile (
                                             int mtu, String comm_method,
                                             long latencyPayload) {
-        File file = new File(this.getExternalFilesDir(null), "latency_payload.csv");
+        String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
+        File file = new File(this.getExternalFilesDir(null), "latency_payload-" + timeSuffix + ".csv");
         StringBuilder out = new StringBuilder("device_type_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_payload\n");
         out.append(Build.ID + "," + Build.BRAND +", 4.2, unknown, " + String.valueOf(mtu)
                 + ", " + comm_method + "," + String.valueOf(latencyPayload) +
@@ -139,7 +141,8 @@ public class BenchmarkClient extends Activity{
     private void writeOpLatencyToFile (
                                             int mtu, String comm_method,
                                             long [] opLatency) {
-        File file = new File(this.getExternalFilesDir(null), "latency_op_return.csv");
+        String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
+        File file = new File(this.getExternalFilesDir(null), "latency_op_return-" + timeSuffix + ".csv");
         StringBuilder out = new StringBuilder("device_type_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_op_return\n");
 
         for (long time : opLatency) {
@@ -161,11 +164,12 @@ public class BenchmarkClient extends Activity{
     private void writeJitterToFile (
                                        int mtu, String comm_method,
                                        long [] jitter) {
-        File file = new File(this.getExternalFilesDir(null), "jitter.csv");
+        String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
+        File file = new File(this.getExternalFilesDir(null), "jitter-" + timeSuffix + ".csv");
         StringBuilder out = new StringBuilder("device_type_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, jitter\n");
 
         for (long time : jitter) {
-            out.append(Build.ID + "," + Build.BRAND + ", 4.2, unknown, " + String.valueOf(mtu)
+            out.append(Build.DISPLAY + "," + Build.BRAND + ", 4.2, unknown, " + String.valueOf(mtu)
                     + ", " + comm_method + "," + String.valueOf(time) +
                     "\n");
         }
@@ -258,6 +262,7 @@ public class BenchmarkClient extends Activity{
                                                         final long [] serverMeasurements) {
                 writeUpdate(clientMeasurements.length + " client measurements available");
                 writeUpdate(serverMeasurements.length + " server measurements available");
+                mBenchmarkClient.requestThroughput();
                 writeUpdate("Writing results to file...");
                 writePayloadLatencyToFile(mtu, commMethod, serverMeasurements[serverMeasurements.length - 1]);
                 writeOpLatencyToFile(mtu, commMethod, clientMeasurements);
