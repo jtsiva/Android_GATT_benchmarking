@@ -208,6 +208,7 @@ public class BenchmarkClient extends Activity{
         writeUpdate("\tData Size: " + String.valueOf(dataSize));
         writeUpdate("\tConn Interval: " + String.valueOf(connInterval));
         writeUpdate("\tDuration: " + String.valueOf(duration) + (1 == durationIsTime? "ms" : "bytes"));
+        writeUpdate("\tClient ID: " + Build.DISPLAY);
         writeUpdate("----------------------------");
 
         // Devices with a display should not go to sleep
@@ -275,6 +276,7 @@ public class BenchmarkClient extends Activity{
 
             @Override
             public void onServerIDAvailable(String id) {
+                writeUpdate("Server ID: " + id);
                 mServerID = id;
             }
         });
