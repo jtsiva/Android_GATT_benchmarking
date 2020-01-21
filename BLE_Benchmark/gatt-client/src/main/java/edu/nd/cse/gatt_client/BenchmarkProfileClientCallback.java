@@ -22,4 +22,6 @@ public interface BenchmarkProfileClientCallback {
     public void onLatencyMeasurementsAvailable (long [] clientMeasurements, long [] serverMeasurements);
 
     public void onBenchmarkError (int code, String details);
+
+    public void onServerIDAvailable(String id);
 }

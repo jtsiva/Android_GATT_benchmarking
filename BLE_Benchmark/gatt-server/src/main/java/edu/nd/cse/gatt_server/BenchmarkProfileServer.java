@@ -12,6 +12,7 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
 import android.content.Context;
+import android.os.Build;
 
 import java.io.File;
 import java.util.UUID;
@@ -29,11 +30,6 @@ import java.nio.ByteBuffer;
 * - stop advertising after connect (x)
 *   - boolean on start function to indicate whether or not to continue
 *     advertising after a connection has been made
-* - log benchmark results to file
-*   - boolean on constructor to indicate whether or not raw timestamps
- *    should be logged to a file. If not logged to file then the local
- *    buffer size is increased and treated like a circular buffer with
- *    a maximum number of entries of 10k (may need to experiment)
 * */
 public class BenchmarkProfileServer extends BenchmarkProfile
                                     implements CharacteristicHandler {
@@ -119,9 +115,13 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         BluetoothGattCharacteristic latencyChar = new BluetoothGattCharacteristic(BenchmarkProfile.LATENCY_CHAR,
                 BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
 
+        BluetoothGattCharacteristic idChar = new BluetoothGattCharacteristic(BenchmarkProfile.ID_CHAR,
+                BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
+
         service.addCharacteristic (writeChar);
         service.addCharacteristic (rawDataChar);
         service.addCharacteristic (latencyChar);
+        service.addCharacteristic (idChar);
 
         return service;
     }
@@ -147,6 +147,9 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         }
         else if (BenchmarkProfile.LATENCY_CHAR.equals(data.mCharID)){
             response = handleLatencyRequest();
+        }
+        else if (BenchmarkProfile.ID_CHAR.equals(data.mCharID)){
+            response = handleIDRequest();
         }
 
         return response;
@@ -257,6 +260,14 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         return new GattData (null,
                 null,
                 ByteBuffer.allocate(Long.BYTES).putLong(returnVal).array());
+    }
+
+    /**
+     * Get the display ID for this device and return
+     * @return Build.DISPLAY
+     */
+    private GattData handleIDRequest () {
+        return new GattData (null, null, Build.DISPLAY.getBytes());
     }
 
 

@@ -36,6 +36,7 @@ import java.util.UUID;
  * - set data size (x)
  * - get timestamps (x)
  * - get netstring data (x)
+ * - get id for server (x)
  *
  * Note that the (x) in the above lists indicates required interaction with at
  * least one other device.
@@ -65,5 +66,9 @@ public class BenchmarkProfile {
 
     //return every latency measurement--1 per request. Send -1 if no (more) data available
     public static UUID LATENCY_CHAR = UUID.fromString("00000005-0000-1000-8000-00805F9B34FB");
+
+    public static UUID ID_CHAR = UUID.fromString("00000006-0000-1000-8000-00805F9B34FB");
+
+
 
 }

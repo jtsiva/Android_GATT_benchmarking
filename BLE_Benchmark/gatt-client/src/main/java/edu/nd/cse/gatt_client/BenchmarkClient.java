@@ -41,6 +41,8 @@ public class BenchmarkClient extends Activity{
 
     private Thread mBgThread = null;
 
+    String mServerID = new String ("?");
+
 
     /**
      * Convenience method to write text to the screen
@@ -96,7 +98,7 @@ public class BenchmarkClient extends Activity{
      * @param comm_method the method of communication used for the test
      * @param latencyStartup the reported start-up latency
      */
-    private void writeStartupLatencyToFile(
+    private void writeStartupLatencyToFile(String id,
                                     int mtu, String comm_method,
                                     long latencyStartup) {
         String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
@@ -117,7 +119,7 @@ public class BenchmarkClient extends Activity{
      * @param comm_method the method of communication used for the test
      * @param latencyPayload
      */
-    private void writePayloadLatencyToFile (
+    private void writePayloadLatencyToFile ( String id,
                                             int mtu, String comm_method,
                                             long latencyPayload) {
         String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
@@ -138,7 +140,7 @@ public class BenchmarkClient extends Activity{
      * @param comm_method the method of communication used for the test
      * @param opLatency the times from the initiation of an op to its return
      */
-    private void writeOpLatencyToFile (
+    private void writeOpLatencyToFile (     String id,
                                             int mtu, String comm_method,
                                             long [] opLatency) {
         String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
@@ -161,7 +163,7 @@ public class BenchmarkClient extends Activity{
      * @param comm_method the method of communication used for the test
      * @param jitter the timestamps (since the start) of consecutive messages
      */
-    private void writeJitterToFile (
+    private void writeJitterToFile (   String id,
                                        int mtu, String comm_method,
                                        long [] jitter) {
         String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
@@ -223,13 +225,14 @@ public class BenchmarkClient extends Activity{
                 Timestamp ts = new Timestamp(new Date().getTime());
                 writeUpdate("Benchmark ended at: " + ts);
 
+                mBenchmarkClient.requestServerID();
                 mBenchmarkClient.requestLatencyMeasurements();
             }
 
             @Override
             public void onStartupLatencyAvailable (final long startLatency){
                 writeUpdate("Start-up latency: " + startLatency);
-                writeStartupLatencyToFile (mtu, commMethod, startLatency);
+                writeStartupLatencyToFile (Build.DISPLAY, mtu, commMethod, startLatency);
             }
 
             @Override
@@ -264,10 +267,15 @@ public class BenchmarkClient extends Activity{
                 writeUpdate(serverMeasurements.length + " server measurements available");
                 mBenchmarkClient.requestThroughput();
                 writeUpdate("Writing results to file...");
-                writePayloadLatencyToFile(mtu, commMethod, serverMeasurements[serverMeasurements.length - 1]);
-                writeOpLatencyToFile(mtu, commMethod, clientMeasurements);
-                writeJitterToFile(mtu, commMethod, serverMeasurements);
+                writePayloadLatencyToFile(Build.DISPLAY, mtu, commMethod, serverMeasurements[serverMeasurements.length - 1]);
+                writeOpLatencyToFile(Build.DISPLAY, mtu, commMethod, clientMeasurements);
+                writeJitterToFile(mServerID, mtu, commMethod, serverMeasurements);
 
+            }
+
+            @Override
+            public void onServerIDAvailable(String id) {
+                mServerID = id;
             }
         });
 

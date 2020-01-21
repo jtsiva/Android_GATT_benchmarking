@@ -258,6 +258,15 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     }
 
     /**
+     * Request the server's ID (useful for data logging)
+     */
+    public void requestServerID () {
+        mGattClient.handleCharacteristic(new GattData(mServerAddress,
+                BenchmarkProfile.ID_CHAR,
+                null));
+    }
+
+    /**
      * Match the incoming message to the appropriate callback
      *
      *
@@ -292,7 +301,9 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
             ++mLatencyIndex;
 
             data.mBuffer = null;
-        }else { //we can't handle this so return null
+        }else if(BenchmarkProfile.ID_CHAR.equals(data.mCharID)){
+            mCB.onServerIDAvailable(new String(data.mBuffer));
+        } else{ //we can't handle this so return null
             data = null;
         }
 
