@@ -102,7 +102,7 @@ public class BenchmarkClient extends Activity{
         String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
         File file = new File(this.getExternalFilesDir(null), "latency_startup-" + timeSuffix + ".csv");
         StringBuilder out = new StringBuilder("device_type_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_startup\n");
-        out.append(Build.ID + "," + Build.BRAND +", 4.2, unknown, " + String.valueOf(mtu)
+        out.append(Build.DISPLAY + "," + Build.BRAND +", 4.2, unknown, " + String.valueOf(mtu)
                 + ", " + comm_method + "," + String.valueOf(latencyStartup) +
                 "\n");
 
@@ -123,7 +123,7 @@ public class BenchmarkClient extends Activity{
         String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
         File file = new File(this.getExternalFilesDir(null), "latency_payload-" + timeSuffix + ".csv");
         StringBuilder out = new StringBuilder("device_type_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_payload\n");
-        out.append(Build.ID + "," + Build.BRAND +", 4.2, unknown, " + String.valueOf(mtu)
+        out.append(Build.DISPLAY + "," + Build.BRAND +", 4.2, unknown, " + String.valueOf(mtu)
                 + ", " + comm_method + "," + String.valueOf(latencyPayload) +
                 "\n");
 
@@ -146,7 +146,7 @@ public class BenchmarkClient extends Activity{
         StringBuilder out = new StringBuilder("device_type_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_op_return\n");
 
         for (long time : opLatency) {
-            out.append(Build.ID + "," + Build.BRAND + ", 4.2, unknown, " + String.valueOf(mtu)
+            out.append(Build.DISPLAY + "," + Build.BRAND + ", 4.2, unknown, " + String.valueOf(mtu)
                     + ", " + comm_method + "," + String.valueOf(time) +
                     "\n");
         }
