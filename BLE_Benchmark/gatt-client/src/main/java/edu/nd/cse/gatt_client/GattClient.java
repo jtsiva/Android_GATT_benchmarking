@@ -221,10 +221,13 @@ public class GattClient extends BluetoothGattCallback
     /**
      * Disconnect and stop scanning
      *
+     * Disconnect vs close: https://stackoverflow.com/questions/23110295/difference-between-close-and-disconnect
+     *
      */
     public void stop () {
         for (Map.Entry<String, BluetoothGatt> entry : mConnectedDevices.entrySet()) {
             entry.getValue().disconnect();
+            entry.getValue().close();
         }
 
         stopScanning();
