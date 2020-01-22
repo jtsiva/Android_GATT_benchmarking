@@ -5,6 +5,7 @@ import edu.nd.cse.benchmarkcommon.SaveToFileRunnable;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.widget.TextView;
 import android.app.Activity;
@@ -48,6 +49,8 @@ public class BenchmarkClient extends Activity{
 
     private String mServerID = new String ("?");
     private long mStartupLatency = 0;
+
+    private Handler mCloseHandler = new Handler();
 
 
     /**
@@ -279,22 +282,27 @@ public class BenchmarkClient extends Activity{
                 writeOpLatencyToFile(Build.DISPLAY,mServerID, mtu, commMethod, clientMeasurements);
                 writeJitterToFile(Build.DISPLAY,mServerID, mtu, commMethod, serverMeasurements);
 
+                mCloseHandler.postDelayed(new Runnable() {
+                    public void run() {
+                        /* Wait for writes to be done and then exit */
+                        try {
+                            mWriteStartupLatencyThread.join();
+                            mWritePayloadLatencyThread.join();
+                            mWriteOpLatencyThread.join();
+                            mWriteJitterThread.join();
+                        } catch (InterruptedException e){
+                            //meh
+                            Log.w(TAG, "writes were interrupted");
+                        }
 
-                /* Wait for writes to be done and then exit */
-                try {
-                    mWriteStartupLatencyThread.join();
-                    mWritePayloadLatencyThread.join();
-                    mWriteOpLatencyThread.join();
-                    mWriteJitterThread.join();
-                } catch (InterruptedException e){
-                    //meh
-                    Log.w(TAG, "writes were interrupted");
-                }
+                        mBenchmarkClient.cleanup();
 
-                mBenchmarkClient.cleanup();
+                        int pid = android.os.Process.myPid();
+                        android.os.Process.killProcess(pid);
+                    }
+                }, 5000);
 
-                int pid = android.os.Process.myPid();
-                android.os.Process.killProcess(pid);
+
             }
 
             @Override
