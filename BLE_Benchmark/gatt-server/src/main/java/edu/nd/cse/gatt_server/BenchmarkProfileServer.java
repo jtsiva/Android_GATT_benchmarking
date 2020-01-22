@@ -255,6 +255,8 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         if (mSentDiffsIndex < mDiffsIndex) {
             returnVal = mTimeDiffs[mSentDiffsIndex];
             ++mSentDiffsIndex;
+        } else {
+            mCB.onBenchmarkComplete();
         }
 
         return new GattData (null,

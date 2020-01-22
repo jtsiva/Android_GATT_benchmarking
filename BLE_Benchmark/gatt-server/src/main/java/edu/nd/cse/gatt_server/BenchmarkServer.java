@@ -9,6 +9,7 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.os.Bundle;
+import android.os.Handler;
 
 import java.util.Date;
 import java.sql.Timestamp;
@@ -24,6 +25,8 @@ public class BenchmarkServer extends Activity{
 
     /* Benchmarking Profile Server */
     private BenchmarkProfileServer mBenchmarkServer;
+
+    private Handler mCloseHandler = new Handler();
 
     /**
      * Convenience method to write text to the screen
@@ -107,7 +110,14 @@ public class BenchmarkServer extends Activity{
                 Timestamp ts = new Timestamp(new Date().getTime());
                 writeUpdate("Benchmark completed at: " + ts);
 
-                mBenchmarkServer.stop();
+                mCloseHandler.postDelayed(new Runnable() {
+                    public void run() {
+                        mBenchmarkServer.stop();
+                        int pid = android.os.Process.myPid();
+                        android.os.Process.killProcess(pid);
+                    }
+                }, 5000);
+
             }
 
             @Override
