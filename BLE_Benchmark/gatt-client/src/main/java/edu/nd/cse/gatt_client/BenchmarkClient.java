@@ -24,6 +24,8 @@ import java.text.SimpleDateFormat;
  * Activity that runs the client side of the BLE benchmark
  */
 public class BenchmarkClient extends Activity{
+    private static final String TAG = BenchmarkProfileClient.class.getSimpleName();
+
     /* UI elements */
 
     private TextView mUpdates;
@@ -39,7 +41,10 @@ public class BenchmarkClient extends Activity{
     private final int DEFAULT_DURATION = 10000;
     private final int DEFAULT_DURATION_IS_TIME  = 1;
 
-    private Thread mBgThread = null;
+    private Thread mWriteStartupLatencyThread = null;
+    private Thread mWritePayloadLatencyThread = null;
+    private Thread mWriteOpLatencyThread = null;
+    private Thread mWriteJitterThread = null;
 
     private String mServerID = new String ("?");
     private long mStartupLatency = 0;
@@ -109,8 +114,8 @@ public class BenchmarkClient extends Activity{
                 + ", " + comm_method + "," + String.valueOf(latencyStartup) +
                 "\n");
 
-        mBgThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
-        mBgThread.start();
+        mWriteStartupLatencyThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
+        mWriteStartupLatencyThread.start();
     }
 
     /**
@@ -130,8 +135,8 @@ public class BenchmarkClient extends Activity{
                 + ", " + comm_method + "," + String.valueOf(latencyPayload) +
                 "\n");
 
-        mBgThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
-        mBgThread.start();
+        mWritePayloadLatencyThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
+        mWritePayloadLatencyThread.start();
     }
 
     /**
@@ -153,8 +158,8 @@ public class BenchmarkClient extends Activity{
                     + ", " + comm_method + "," + String.valueOf(time) +
                     "\n");
         }
-        mBgThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
-        mBgThread.start();
+        mWriteOpLatencyThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
+        mWriteOpLatencyThread.start();
     }
 
     /**
@@ -176,8 +181,8 @@ public class BenchmarkClient extends Activity{
                     + ", " + comm_method + "," + String.valueOf(time) +
                     "\n");
         }
-        mBgThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
-        mBgThread.start();
+        mWriteJitterThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
+        mWriteJitterThread.start();
     }
 
 
@@ -274,6 +279,22 @@ public class BenchmarkClient extends Activity{
                 writeOpLatencyToFile(Build.DISPLAY,mServerID, mtu, commMethod, clientMeasurements);
                 writeJitterToFile(Build.DISPLAY,mServerID, mtu, commMethod, serverMeasurements);
 
+
+                /* Wait for writes to be done and then exit */
+                try {
+                    mWriteStartupLatencyThread.join();
+                    mWritePayloadLatencyThread.join();
+                    mWriteOpLatencyThread.join();
+                    mWriteJitterThread.join();
+                } catch (InterruptedException e){
+                    //meh
+                    Log.w(TAG, "writes were interrupted");
+                }
+
+                mBenchmarkClient.cleanup();
+
+                int pid = android.os.Process.myPid();
+                android.os.Process.killProcess(pid);
             }
 
             @Override
