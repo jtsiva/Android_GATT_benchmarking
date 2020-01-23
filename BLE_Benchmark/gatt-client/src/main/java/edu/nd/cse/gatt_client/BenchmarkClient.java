@@ -35,7 +35,7 @@ public class BenchmarkClient extends Activity{
     private BenchmarkProfileClient mBenchmarkClient;
 
     /* Default parameters */
-    private final int DEFAULT_MTU = 20;
+    private final int DEFAULT_MTU = 23;
     private final int DEFAULT_DATA_SIZE = 20;
     private final String DEFAULT_COMM_METHOD = "write_req";
     private final int DEFAULT_CONN_INTERVAL = 40;

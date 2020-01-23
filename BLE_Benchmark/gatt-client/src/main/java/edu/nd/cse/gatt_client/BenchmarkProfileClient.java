@@ -323,12 +323,9 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * @param mtu - the maximum transmission unit to use.
      */
     private void setMtu (int mtu) {
-        if (20 == mtu){ //this is the default value for the stack, so bounce back
-            mConnUpdater.mtuUpdate(mServerAddress, mtu);
-        } else {
-            mMtuState = false; //unsure if okay right now
-            mGattClient.mtuUpdate(mServerAddress, mtu);
-        }
+        mMtuState = false; //unsure if okay right now
+        mGattClient.mtuUpdate(mServerAddress, mtu);
+
     }
 
     /**
