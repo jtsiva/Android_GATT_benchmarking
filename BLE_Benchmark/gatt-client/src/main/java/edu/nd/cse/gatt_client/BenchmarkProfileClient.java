@@ -183,10 +183,16 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     private Runnable goTest = new Runnable () {
         @Override
         public void run() {
-            byte [] b = new byte[mDataSize];
+            int packetSize = mDataSize;
+            if (!mBenchmarkDurationIsTime &&
+                    packetSize + mBenchmarkBytesSent > mBenchmarkDuration){
+
+                packetSize = Math.toIntExact(mBenchmarkDuration - mBenchmarkBytesSent);
+            }
+            byte [] b = new byte[packetSize];
             new Random().nextBytes(b);
             GattData data = new GattData(mServerAddress, BenchmarkProfile.TEST_CHAR, b);
-            mBenchmarkBytesSent += mDataSize;
+            mBenchmarkBytesSent += packetSize;
 
             mGattClient.handleCharacteristic(data);
 
@@ -203,7 +209,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                     mCB.onBytesSentAvailable(mBenchmarkBytesSent);
                 }
             } else {
-                if (mBenchmarkBytesSent + mDataSize <= mBenchmarkDuration) {
+                if (mBenchmarkBytesSent < mBenchmarkDuration) {
                     mBenchmarkHandler.postDelayed(this, mConnInterval);
                 }
                 else {
