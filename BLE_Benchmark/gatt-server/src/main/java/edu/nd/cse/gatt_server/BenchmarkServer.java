@@ -20,6 +20,8 @@ import java.sql.Timestamp;
  */
 public class BenchmarkServer extends Activity{
 
+    private static final String TAG = BenchmarkServer.class.getSimpleName();
+
     /* UI elements */
     private TextView mUpdates;
 
@@ -70,7 +72,11 @@ public class BenchmarkServer extends Activity{
         String[] PERMISSIONS = {Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
 
         if(!hasPermissions(this, PERMISSIONS)){
+            Log.i(TAG, "Don't have permissions. Requesting...");
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
+        } else
+        {
+            Log.d(TAG, "We have permissions!");
         }
     }
 
@@ -80,6 +86,7 @@ public class BenchmarkServer extends Activity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Log.i(TAG, "onCreate");
 
         checkPermissions();
 
@@ -127,6 +134,7 @@ public class BenchmarkServer extends Activity{
             }
         });
 
+        Log.i(TAG, "Starting benchmark server...");
         mBenchmarkServer.start();
 
     }

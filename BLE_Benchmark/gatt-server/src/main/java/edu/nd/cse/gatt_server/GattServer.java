@@ -205,7 +205,7 @@ public class GattServer extends BluetoothGattServerCallback {
                 .build();
 
         AdvertiseData data = new AdvertiseData.Builder()
-                .setIncludeDeviceName(true)
+                .setIncludeDeviceName(false)
                 .setIncludeTxPowerLevel(false)
                 .addServiceUuid(new ParcelUuid(BenchmarkProfileServer.BENCHMARK_SERVICE))
                 .build();
