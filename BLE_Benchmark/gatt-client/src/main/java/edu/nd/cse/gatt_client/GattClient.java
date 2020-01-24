@@ -213,7 +213,7 @@ public class GattClient extends BluetoothGattCallback
 
         mBluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
         if (mBluetoothLeScanner == null){
-            Log.e("Central", "no BLE scanner assigned!!!");
+            Log.e(TAG, "no BLE scanner assigned!!!");
             return;
         }
         mBluetoothLeScanner.startScan(filters, settings, mScanCallback);
@@ -279,7 +279,7 @@ public class GattClient extends BluetoothGattCallback
     private ScanCallback mScanCallback = new ScanCallback () {
         @Override
         public void onScanResult ( int callbackType, ScanResult result){
-
+            //Log.i(TAG, "result: " + result);
             if (!(mStopScanningOnConnect && mConnectedDevices.size() > 0) && !mConnecting) {
                 if (!mConnectedDevices.containsKey(result.getDevice().getAddress())) {
                     connect(result.getDevice());
