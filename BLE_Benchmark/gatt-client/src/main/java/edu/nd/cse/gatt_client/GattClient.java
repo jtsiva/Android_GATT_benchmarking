@@ -45,6 +45,8 @@ public class GattClient extends BluetoothGattCallback
                         implements CharacteristicHandler, ConnectionUpdaterIFace{
     private static final String TAG = BenchmarkClient.class.getSimpleName();
 
+    private final int MAX_MTU = 517;
+
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
@@ -335,6 +337,8 @@ public class GattClient extends BluetoothGattCallback
      */
     public void mtuUpdate(String address, int mtu){
         final BluetoothGatt bluetoothGatt = mConnectedDevices.get(address);
+
+        mtu = (mtu > MAX_MTU) ? MAX_MTU : mtu;
         bluetoothGatt.requestMtu(mtu);
     }
 

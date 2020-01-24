@@ -374,12 +374,18 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
 
         @Override
         public void mtuUpdate(String address, int mtu){
-            if (mtu != mMtu) {
+            if (0 == mtu) {
                 mCB.onBenchmarkError(BenchmarkProfileClientCallback.SET_MTU_ERROR
                         , "set MTU to " + mMtu + ", but there was an error");
             }
             else {
-                Log.d(TAG, "mtu updated!");
+                if (mtu == mMtu) {
+                    Log.d(TAG, "mtu updated!");
+                } else {
+                    Log.i(TAG, "MTU negotiated to: " + mtu);
+                    mMtu = mtu;
+                }
+
                 mMtuState = true;
             }
 
