@@ -99,6 +99,31 @@ public class BenchmarkClient extends Activity{
         }
     }
 
+    /**
+     * Catch the result of the permissions request. Allows us to wait until the
+     * permissions are granted.
+     *
+     * @param requestCode original code from request
+     * @param permissions location coarse and fine
+     * @param grantResults results of permissions request
+     */
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] grantResults) {
+        boolean allGranted = true;
+        for (int result : grantResults) {
+            allGranted &= (result == PERMISSION_GRANTED);
+        }
+
+        if (!allGranted) {
+            Log.e(TAG, "Not all permissions granted!!!");
+        } else {
+            runBenchmark();
+        }
+    }
+
 
     /**
      * Write the recorded start-up latency to a file
@@ -196,6 +221,14 @@ public class BenchmarkClient extends Activity{
 
         checkPermissions();
 
+
+    }
+
+    /**
+     * Get this parameters from the intent, set up the callbacks, and run the
+     * benchmark
+     */
+    private void runBenchmark(){
         Bundle receiveBundle = this.getIntent().getExtras();
         if (null == receiveBundle) {
             receiveBundle = new Bundle();
