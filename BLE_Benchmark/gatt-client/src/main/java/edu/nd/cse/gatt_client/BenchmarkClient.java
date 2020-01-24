@@ -114,7 +114,7 @@ public class BenchmarkClient extends Activity{
             int[] grantResults) {
         boolean allGranted = true;
         for (int result : grantResults) {
-            allGranted &= (result == PERMISSION_GRANTED);
+            allGranted &= (result == PackageManager.PERMISSION_GRANTED);
         }
 
         if (!allGranted) {
