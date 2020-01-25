@@ -1,6 +1,7 @@
 package edu.nd.cse.gatt_client;
 
 import edu.nd.cse.benchmarkcommon.SaveToFileRunnable;
+import edu.nd.cse.benchmarkcommon.BluetoothRestarter;
 
 import android.Manifest;
 import android.content.Context;
@@ -26,6 +27,8 @@ import java.text.SimpleDateFormat;
  */
 public class BenchmarkClient extends Activity{
     private static final String TAG = BenchmarkProfileClient.class.getSimpleName();
+
+    private BluetoothRestarter mBTRestarter = new BluetoothRestarter(this);
 
     /* UI elements */
 
@@ -97,7 +100,12 @@ public class BenchmarkClient extends Activity{
         if(!hasPermissions(this, PERMISSIONS)){
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
         } else {
-            runBenchmark();
+            mBTRestarter.restart(new BluetoothRestarter.RestartListener (){
+                @Override
+                public void onRestartComplete() {
+                    runBenchmark();
+                }
+            });
         }
     }
 
@@ -122,7 +130,12 @@ public class BenchmarkClient extends Activity{
         if (!allGranted) {
             Log.e(TAG, "Not all permissions granted!!!");
         } else {
-            runBenchmark();
+            mBTRestarter.restart(new BluetoothRestarter.RestartListener (){
+                @Override
+                public void onRestartComplete() {
+                    runBenchmark();
+                }
+            });
         }
     }
 
