@@ -14,6 +14,8 @@ import android.os.Handler;
 import java.util.Date;
 import java.sql.Timestamp;
 
+import edu.nd.cse.benchmarkcommon.BluetoothRestarter;
+
 /**
  * Activity that runs the gatt server. Receives operating parameters
  * and passes to server.
@@ -21,6 +23,8 @@ import java.sql.Timestamp;
 public class BenchmarkServer extends Activity{
 
     private static final String TAG = BenchmarkServer.class.getSimpleName();
+
+    private BluetoothRestarter mBTRestarter = new BluetoothRestarter(this);
 
     /* UI elements */
     private TextView mUpdates;
@@ -72,11 +76,44 @@ public class BenchmarkServer extends Activity{
         String[] PERMISSIONS = {Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
 
         if(!hasPermissions(this, PERMISSIONS)){
-            Log.i(TAG, "Don't have permissions. Requesting...");
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
-        } else
-        {
-            Log.d(TAG, "We have permissions!");
+        } else {
+            mBTRestarter.restart(new BluetoothRestarter.RestartListener (){
+                @Override
+                public void onRestartComplete() {
+                    runBenchmark();
+                }
+            });
+        }
+    }
+
+    /**
+     * Catch the result of the permissions request. Allows us to wait until the
+     * permissions are granted.
+     *
+     * @param requestCode original code from request
+     * @param permissions location coarse and fine
+     * @param grantResults results of permissions request
+     */
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] grantResults) {
+        boolean allGranted = true;
+        for (int result : grantResults) {
+            allGranted &= (result == PackageManager.PERMISSION_GRANTED);
+        }
+
+        if (!allGranted) {
+            Log.e(TAG, "Not all permissions granted!!!");
+        } else {
+            mBTRestarter.restart(new BluetoothRestarter.RestartListener (){
+                @Override
+                public void onRestartComplete() {
+                    runBenchmark();
+                }
+            });
         }
     }
 
@@ -86,16 +123,15 @@ public class BenchmarkServer extends Activity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Log.i(TAG, "onCreate");
 
         checkPermissions();
 
+    }
 
-        //Bundle receiveBundle = this.getIntent().getExtras();
-
-
-
-
+    /**
+     * Start the server and prepare to run the benchmark
+     */
+    public void runBenchmark () {
         mUpdates = (TextView) findViewById(R.id.updates);
         writeUpdate("Parameters:\n");
         //Here we would append a text version of all of the parameters
@@ -136,7 +172,6 @@ public class BenchmarkServer extends Activity{
 
         Log.i(TAG, "Starting benchmark server...");
         mBenchmarkServer.start();
-
     }
 
     @Override
