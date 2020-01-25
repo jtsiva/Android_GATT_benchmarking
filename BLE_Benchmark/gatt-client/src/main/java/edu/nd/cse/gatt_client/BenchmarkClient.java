@@ -96,6 +96,8 @@ public class BenchmarkClient extends Activity{
 
         if(!hasPermissions(this, PERMISSIONS)){
             ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
+        } else {
+            runBenchmark();
         }
     }
 
@@ -220,7 +222,6 @@ public class BenchmarkClient extends Activity{
         setContentView(R.layout.activity_main);
 
         checkPermissions();
-
 
     }
 
