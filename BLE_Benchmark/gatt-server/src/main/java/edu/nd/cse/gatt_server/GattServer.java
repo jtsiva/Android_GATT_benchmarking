@@ -112,8 +112,9 @@ public class GattServer extends BluetoothGattServerCallback {
             bluetoothAdapter.enable();
         } else {
             Log.d(TAG, "Bluetooth enabled...starting services");
-            startAdvertising();
             startServer();
+            startAdvertising();
+
         }
     }
 
@@ -171,8 +172,8 @@ public class GattServer extends BluetoothGattServerCallback {
 
             switch (state) {
                 case BluetoothAdapter.STATE_ON:
-                    startAdvertising();
                     startServer();
+                    startAdvertising();
                     break;
                 case BluetoothAdapter.STATE_OFF:
                     stopServer();
