@@ -157,7 +157,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
         @Override
         public void run() {
            // Log.d(TAG, "mtustate: " +  mMtuState + " connIntervalState: " + mConnIntervalState + " dataSizeState: " +  mDataSizeState);
-            if (mMtuState && mConnIntervalState && mDataSizeState) {
+            if (mMtuState && mConnIntervalState && mDataSizeState && mCommMethodState) {
                 Log.d(TAG, "Ready to start benchmark");
                 mCB.onBenchmarkStart();
                 //kick off benchmark
@@ -410,6 +410,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
 
             setConnInterval(mConnInterval);
             setDataSize(mDataSize);
+            setCommMethod(mCommMethod);
         }
 
         @Override
