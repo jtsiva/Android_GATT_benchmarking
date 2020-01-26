@@ -69,6 +69,15 @@ public class BenchmarkProfile {
 
     public static UUID ID_CHAR = UUID.fromString("00000006-0000-1000-8000-00805F9B34FB");
 
+    //Constants for indicating communication method
+    public static String WRITE_REQ_STR = "write_req";
+    public static int WRITE_REQ = 0;
+    public static String WRITE_CMD_STR = "write_cmd";
+    public static int WRITE_CMD = 1;
+    public static String READ_STR = "read";
+    public static int READ = 2;
+    public static String NOTIFY_STR = "notify";
+    public static int NOTIFY = 3;
 
 
 }

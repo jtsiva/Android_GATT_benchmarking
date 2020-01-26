@@ -70,6 +70,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     private boolean mConnIntervalState;
     private int mDataSize = 20;
     private boolean mDataSizeState;
+    private boolean mCommMethod =
 
 
     /**
