@@ -2,6 +2,7 @@ package edu.nd.cse.gatt_client;
 
 import edu.nd.cse.benchmarkcommon.SaveToFileRunnable;
 import edu.nd.cse.benchmarkcommon.BluetoothRestarter;
+import edu.nd.cse.benchmarkcommon.BenchmarkProfile;
 
 import android.Manifest;
 import android.content.Context;
@@ -40,7 +41,7 @@ public class BenchmarkClient extends Activity{
     /* Default parameters */
     private final int DEFAULT_MTU = 23;
     private final int DEFAULT_DATA_SIZE = 20;
-    private final String DEFAULT_COMM_METHOD = "write_req";
+    private final int DEFAULT_COMM_METHOD = BenchmarkProfile.WRITE_REQ;
     private final int DEFAULT_CONN_INTERVAL = 0;
     private final int DEFAULT_DURATION = 10000;
     private final int DEFAULT_DURATION_IS_TIME  = 1;
@@ -228,6 +229,36 @@ public class BenchmarkClient extends Activity{
         mWriteJitterThread.start();
     }
 
+    /**
+     * Determine the appropriate string to return given the integer
+     * representation of the communication method. For UI purposes.
+     *
+     * @param commMethod the communication method as defined in BenchmarkProfile
+     * @return the appropriate name for the comm method
+     */
+    private String getCommMethodString (int commMethod) {
+        String retStr;
+        switch(commMethod) {
+            case BenchmarkProfile.WRITE_REQ:
+                retStr = BenchmarkProfile.WRITE_REQ_STR;
+                break;
+            case BenchmarkProfile.WRITE_CMD:
+                retStr = BenchmarkProfile.WRITE_CMD_STR;
+                break;
+            case BenchmarkProfile.READ:
+                retStr = BenchmarkProfile.READ_STR;
+                break;
+            case BenchmarkProfile.NOTIFY:
+                retStr = BenchmarkProfile.NOTIFY_STR;
+                break;
+            default:
+                retStr = "unknown";
+                break;
+        }
+
+        return retStr;
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -252,14 +283,14 @@ public class BenchmarkClient extends Activity{
         final int mtu = receiveBundle.getInt("mtu", DEFAULT_MTU);
         final int duration = receiveBundle.getInt("duration", DEFAULT_DURATION);
         final int durationIsTime = receiveBundle.getInt("durationIsTime", DEFAULT_DURATION_IS_TIME);
-        final String commMethod = receiveBundle.getString("commMethod", DEFAULT_COMM_METHOD);
+        final int commMethod = receiveBundle.getInt("commMethod", DEFAULT_COMM_METHOD);
 
 
         mUpdates = (TextView) findViewById(R.id.updates);
 
         writeUpdate("Parameters:");
-        //Here we would append a text version of all of the parameters
-        writeUpdate("\tMethod: " + commMethod);
+        //Here we append a text version of all of the parameters
+        writeUpdate("\tMethod: " + getCommMethodString(commMethod));
         writeUpdate("\tMTU: " + String.valueOf(mtu));
         writeUpdate("\tData Size: " + String.valueOf(dataSize));
         writeUpdate("\tConn Interval: " + String.valueOf(connInterval));
@@ -324,10 +355,10 @@ public class BenchmarkClient extends Activity{
                 writeUpdate(serverMeasurements.length + " server measurements available");
                 mBenchmarkClient.requestThroughput();
                 writeUpdate("Writing results to file...");
-                writeStartupLatencyToFile (Build.DISPLAY, mServerID, mtu, commMethod, mStartupLatency);
-                writePayloadLatencyToFile(Build.DISPLAY, mServerID, mtu, commMethod, serverMeasurements[serverMeasurements.length - 1]);
-                writeOpLatencyToFile(Build.DISPLAY,mServerID, mtu, commMethod, clientMeasurements);
-                writeJitterToFile(Build.DISPLAY,mServerID, mtu, commMethod, serverMeasurements);
+                writeStartupLatencyToFile (Build.DISPLAY, mServerID, mtu, getCommMethodString(commMethod), mStartupLatency);
+                writePayloadLatencyToFile(Build.DISPLAY, mServerID, mtu, getCommMethodString(commMethod), serverMeasurements[serverMeasurements.length - 1]);
+                writeOpLatencyToFile(Build.DISPLAY,mServerID, mtu, getCommMethodString(commMethod), clientMeasurements);
+                writeJitterToFile(Build.DISPLAY,mServerID, mtu, getCommMethodString(commMethod), serverMeasurements);
 
                 mCloseHandler.postDelayed(new Runnable() {
                     public void run() {
@@ -359,7 +390,7 @@ public class BenchmarkClient extends Activity{
             }
         });
 
-        mBenchmarkClient.prepare(mtu, connInterval, dataSize);
+        mBenchmarkClient.prepare(mtu, connInterval, dataSize, commMethod);
         mBenchmarkClient.beginBenchmark(duration, 1 == durationIsTime);
     }
 

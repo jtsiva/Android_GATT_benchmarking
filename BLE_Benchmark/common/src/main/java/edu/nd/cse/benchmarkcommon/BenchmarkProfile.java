@@ -49,10 +49,10 @@ public class BenchmarkProfile {
     public static final UUID BENCHMARK_SERVICE = UUID.fromString("00000001-0000-1000-8000-00805F9B34FB");
 
     //Throughput benchmarking will occur on this characteristic (bytes)
-    public static UUID TEST_CHAR = UUID.fromString("00000002-0000-1000-8000-00805F9B34FB");
+    public static final UUID TEST_CHAR = UUID.fromString("00000002-0000-1000-8000-00805F9B34FB");
 
     //descriptor for changing the behavior of the test characteristic (n/a)
-    public static UUID TEST_DESC = UUID.fromString("00000003-0000-1000-8000-00805F9B34FB");
+    public static final UUID TEST_DESC = UUID.fromString("00000003-0000-1000-8000-00805F9B34FB");
 
     //The following characteristics are available for querying about the results of the
     //benchmarking. Note that querying these chars DURING the benchmark WILL effect the
@@ -62,22 +62,28 @@ public class BenchmarkProfile {
     //formatted as netstring: [num bytes].[bytes]
     //characteristic must be made available, but does not need to be implemented
     //if not implemented simply return a single byte: 0
-    public static UUID RAW_DATA_CHAR = UUID.fromString("00000004-0000-1000-8000-00805F9B34FB");
+    public static final UUID RAW_DATA_CHAR = UUID.fromString("00000004-0000-1000-8000-00805F9B34FB");
 
     //return every latency measurement--1 per request. Send -1 if no (more) data available
-    public static UUID LATENCY_CHAR = UUID.fromString("00000005-0000-1000-8000-00805F9B34FB");
+    public static final UUID LATENCY_CHAR = UUID.fromString("00000005-0000-1000-8000-00805F9B34FB");
 
-    public static UUID ID_CHAR = UUID.fromString("00000006-0000-1000-8000-00805F9B34FB");
+    public static final UUID ID_CHAR = UUID.fromString("00000006-0000-1000-8000-00805F9B34FB");
 
     //Constants for indicating communication method
-    public static String WRITE_REQ_STR = "write_req";
-    public static int WRITE_REQ = 0;
-    public static String WRITE_CMD_STR = "write_cmd";
-    public static int WRITE_CMD = 1;
-    public static String READ_STR = "read";
-    public static int READ = 2;
-    public static String NOTIFY_STR = "notify";
-    public static int NOTIFY = 3;
+    public static final String WRITE_REQ_STR = "write_req";
+    public static final int WRITE_REQ = 0;
+    public static final String WRITE_CMD_STR = "write_cmd";
+    public static final int WRITE_CMD = 1;
+    public static final String READ_STR = "read";
+    public static final int READ = 2;
+    public static final String NOTIFY_STR = "notify";
+    public static final int NOTIFY = 3;
+
+    //constants for indicating connection priority
+    public static final String BALANCED = "balanced";
+    public static final String LOW_LATENCY = "low_latency";
+    public static final String LOW_POWER = "low_power";
+
 
 
 }

@@ -66,11 +66,12 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     /* performance parameters */
     private int mMtu = 20;
     private boolean mMtuState;
-    private int mConnInterval = 40; //balanced
+    private int mConnInterval = 0; //balanced
     private boolean mConnIntervalState;
     private int mDataSize = 20;
     private boolean mDataSizeState;
-    private boolean mCommMethod =
+    private int mCommMethod = BenchmarkProfile.WRITE_REQ;
+    private boolean mCommMethodState;
 
 
     /**
@@ -90,7 +91,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * Set up the connection with default testing values.
      */
     public void prepare() {
-        this.prepare(mMtu, mConnInterval, mDataSize);
+        this.prepare(mMtu, mConnInterval, mDataSize, mCommMethod);
     }
 
     /**
@@ -100,13 +101,14 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * @param interval - the connection interval to be used.
      * @param dataSize - the amount of data to send in each packet.
      */
-    public void prepare(int mtu, int interval, int dataSize){
+    public void prepare(int mtu, int interval, int dataSize, int commMethod){
         Log.d(TAG, "preparing...");
         mStartScanning = SystemClock.elapsedRealtimeNanos ();
         mGattClient.start(); // will scan and connect to first device
         mMtu = mtu;
         mConnInterval = interval;
         mDataSize = dataSize;
+        mCommMethod = commMethod;
     }
 
     /**
