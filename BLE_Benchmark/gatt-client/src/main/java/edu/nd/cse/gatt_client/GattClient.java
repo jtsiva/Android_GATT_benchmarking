@@ -5,6 +5,7 @@ import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
 import edu.nd.cse.benchmarkcommon.ConnectionUpdaterIFace;
 import edu.nd.cse.benchmarkcommon.GattData;
 import edu.nd.cse.benchmarkcommon.UiUpdate;
+import edu.nd.cse.benchmarkcommon.BenchmarkProfile;
 
 
 import android.bluetooth.BluetoothAdapter;
@@ -56,6 +57,8 @@ public class GattClient extends BluetoothGattCallback
     private UiUpdate mUiUpdate = null;
     private CharacteristicHandler mCharHandler = null;
     private ConnectionUpdater mConnUpdater = null;
+
+    private int mCommMethod;
 
     private boolean mHasBTSupport;
     private boolean mStopScanningOnConnect;
@@ -365,8 +368,29 @@ public class GattClient extends BluetoothGattCallback
         }
 
         mConnUpdater.connIntervalUpdate (address, interval); // respond to confirm
+    }
 
+    /**
+     *
+     * @param commMethod
+     */
+    public void setCommMethod (int commMethod, UUID charUUID) {
+        mCommMethod = commMethod; //save because we need for later
+        int writeType = -1;
+        switch(commMethod){
+            case BenchmarkProfile.WRITE_REQ:
+                writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT;
+                break;
+            case BenchmarkProfile.WRITE_CMD:
+                writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE;
+                break;
+        }
 
+        for (Map.Entry<String, BluetoothGatt> entry : mConnectedDevices.entrySet()) {
+            BluetoothGattService service = entry.getValue().getService(mTargetService);
+            BluetoothGattCharacteristic characteristic = service.getCharacteristic(charUUID);
+            characteristic.setWriteType(writeType);
+        }
     }
 
 

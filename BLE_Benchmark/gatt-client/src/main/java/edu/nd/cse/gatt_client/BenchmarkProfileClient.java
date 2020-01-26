@@ -303,6 +303,11 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                 mCB.onLatencyMeasurementsAvailable(opLatency, serverLatency);
             }
         }else if(BenchmarkProfile.TEST_CHAR.equals(data.mCharID)){
+            //Gatt layer needs to time the operations, so it passes up
+            //the operation latency through the test characteristic
+            //This makes it easy for the GATT layer to time different
+            //things (according to the comm method for example) and let
+            //the profile client manage the times
             ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
             buffer.put(data.mBuffer);
             buffer.flip();//need flip
@@ -356,6 +361,17 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
         } else {
             mDataSizeState = false;
         }
+    }
+
+    /**
+     * Set the method of communication to be used by the gatt layer
+     * for the benchmark
+     *
+     * @param commMethod - the method defined in BenchmarkProfile
+     */
+    private void setCommMethod (int commMethod){
+        mGattClient.setCommMethod(commMethod, BenchmarkProfile.TEST_CHAR);
+        mCommMethodState = true;
     }
 
     /**
