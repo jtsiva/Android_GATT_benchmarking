@@ -228,7 +228,6 @@ public class GattClient extends BluetoothGattCallback
      */
     public void stop () {
         for (Map.Entry<String, BluetoothGatt> entry : mConnectedDevices.entrySet()) {
-            entry.getValue().disconnect();
             entry.getValue().close();
         }
 
