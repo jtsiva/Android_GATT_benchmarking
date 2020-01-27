@@ -379,11 +379,9 @@ public class GattClient extends BluetoothGattCallback
         int writeType = -1;
         switch(commMethod){
             case BenchmarkProfile.WRITE_REQ:
-                Log.i(TAG, "write req set!!!");
                 writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT;
                 break;
             case BenchmarkProfile.WRITE_CMD:
-                Log.i(TAG, "write cmd set!!!");
                 writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE;
                 break;
         }

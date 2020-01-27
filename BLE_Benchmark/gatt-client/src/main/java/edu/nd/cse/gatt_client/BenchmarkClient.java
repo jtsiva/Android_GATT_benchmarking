@@ -151,7 +151,7 @@ public class BenchmarkClient extends Activity{
     private void writeStartupLatencyToFile(String clientID, String serverID,
                                     int mtu, String comm_method,
                                     long latencyStartup) {
-        String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
+        String timeSuffix = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         File file = new File(this.getExternalFilesDir(null), "latency_startup-" + timeSuffix + ".csv");
         StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_startup\n");
         out.append(clientID + ", " + serverID + ", unknown, unknown, unknown, " + String.valueOf(mtu)
@@ -172,7 +172,7 @@ public class BenchmarkClient extends Activity{
     private void writePayloadLatencyToFile ( String clientID, String serverID,
                                             int mtu, String comm_method,
                                             long latencyPayload) {
-        String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
+        String timeSuffix = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         File file = new File(this.getExternalFilesDir(null), "latency_payload-" + timeSuffix + ".csv");
         StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_payload\n");
         out.append(clientID + ", " + serverID + ", unknown, unknown, unknown, " + String.valueOf(mtu)
@@ -193,7 +193,7 @@ public class BenchmarkClient extends Activity{
     private void writeOpLatencyToFile (     String clientID, String serverID,
                                             int mtu, String comm_method,
                                             long [] opLatency) {
-        String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
+        String timeSuffix = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         File file = new File(this.getExternalFilesDir(null), "latency_op_return-" + timeSuffix + ".csv");
         StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_op_return\n");
 
@@ -216,7 +216,7 @@ public class BenchmarkClient extends Activity{
     private void writeJitterToFile (   String clientID, String serverID,
                                        int mtu, String comm_method,
                                        long [] jitter) {
-        String timeSuffix = new SimpleDateFormat("yyyyMMddHHmm").format(new Date());
+        String timeSuffix = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         File file = new File(this.getExternalFilesDir(null), "jitter-" + timeSuffix + ".csv");
         StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, jitter\n");
 
@@ -294,7 +294,7 @@ public class BenchmarkClient extends Activity{
         writeUpdate("\tMTU: " + String.valueOf(mtu));
         writeUpdate("\tData Size: " + String.valueOf(dataSize));
         writeUpdate("\tConn Interval: " + String.valueOf(connInterval));
-        writeUpdate("\tDuration: " + String.valueOf(duration) + (1 == durationIsTime? "ms" : "bytes"));
+        writeUpdate("\tDuration: " + String.valueOf(duration) + (1 == durationIsTime? " ms" : " bytes"));
         writeUpdate("\tClient ID: " + Build.DISPLAY);
         writeUpdate("----------------------------");
 
