@@ -62,8 +62,6 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     private int mLatencyIndex = 0;
     private int mServerLatencyIndex = 0;
 
-    private final int TRAFFIC_ADD_LATENCY = 7;
-
 
     /* performance parameters */
     private int mMtu = 20;
@@ -207,7 +205,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                 // if one more interval will not exceed the duration then post delayed
                 if ((now - mBenchmarkStart) + (mConnInterval * 1000000) < mBenchmarkDuration
                         && mRun) {
-                    mBenchmarkHandler.postDelayed(this, TRAFFIC_ADD_LATENCY);
+                    mBenchmarkHandler.postDelayed(this, mConnInterval);
                 }
                 else {
                     mCB.onBenchmarkComplete();
@@ -215,7 +213,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                 }
             } else {
                 if (mBenchmarkBytesSent < mBenchmarkDuration) {
-                    mBenchmarkHandler.postDelayed(this, TRAFFIC_ADD_LATENCY);
+                    mBenchmarkHandler.postDelayed(this, mConnInterval);
                 }
                 else {
                     mCB.onBenchmarkComplete();
