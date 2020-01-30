@@ -149,13 +149,13 @@ public class BenchmarkClient extends Activity{
      * @param latencyStartup the reported start-up latency
      */
     private void writeStartupLatencyToFile(String clientID, String serverID,
-                                    int mtu, String comm_method,
+                                    int mtu, String comm_method, int connInt,
                                     long latencyStartup) {
         String timeSuffix = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         File file = new File(this.getExternalFilesDir(null), "latency_startup-" + timeSuffix + ".csv");
-        StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_startup\n");
+        StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, conn_int, latency_startup\n");
         out.append(clientID + ", " + serverID + ", unknown, unknown, unknown, " + String.valueOf(mtu)
-                + ", " + comm_method + "," + String.valueOf(latencyStartup) +
+                + ", " + comm_method + "," + connInt + "," + String.valueOf(latencyStartup) +
                 "\n");
 
         mWriteStartupLatencyThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
@@ -170,13 +170,13 @@ public class BenchmarkClient extends Activity{
      * @param latencyPayload
      */
     private void writePayloadLatencyToFile ( String clientID, String serverID,
-                                            int mtu, String comm_method,
+                                            int mtu, String comm_method, int connInt,
                                             long latencyPayload) {
         String timeSuffix = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         File file = new File(this.getExternalFilesDir(null), "latency_payload-" + timeSuffix + ".csv");
-        StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_payload\n");
+        StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, conn_int, latency_payload\n");
         out.append(clientID + ", " + serverID + ", unknown, unknown, unknown, " + String.valueOf(mtu)
-                + ", " + comm_method + "," + String.valueOf(latencyPayload) +
+                + ", " + comm_method + "," + connInt + "," + String.valueOf(latencyPayload) +
                 "\n");
 
         mWritePayloadLatencyThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
@@ -191,15 +191,15 @@ public class BenchmarkClient extends Activity{
      * @param opLatency the times from the initiation of an op to its return
      */
     private void writeOpLatencyToFile (     String clientID, String serverID,
-                                            int mtu, String comm_method,
+                                            int mtu, String comm_method, int connInt,
                                             long [] opLatency) {
         String timeSuffix = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         File file = new File(this.getExternalFilesDir(null), "latency_op_return-" + timeSuffix + ".csv");
-        StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, latency_op_return\n");
+        StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, conn_int, latency_op_return\n");
 
         for (long time : opLatency) {
             out.append(clientID + ", " + serverID + ", unknown, unknown, unknown, " + String.valueOf(mtu)
-                    + ", " + comm_method + "," + String.valueOf(time) +
+                    + ", " + comm_method + "," + connInt + "," + String.valueOf(time) +
                     "\n");
         }
         mWriteOpLatencyThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
@@ -214,15 +214,15 @@ public class BenchmarkClient extends Activity{
      * @param jitter the timestamps (since the start) of consecutive messages
      */
     private void writeJitterToFile (   String clientID, String serverID,
-                                       int mtu, String comm_method,
+                                       int mtu, String comm_method, int connInt,
                                        long [] jitter) {
         String timeSuffix = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         File file = new File(this.getExternalFilesDir(null), "jitter-" + timeSuffix + ".csv");
-        StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, jitter\n");
+        StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, conn_int, conn_priority, jitter\n");
 
         for (long time : jitter) {
             out.append(clientID + ", " + serverID + ", unknown, unknown, unknown, " + String.valueOf(mtu)
-                    + ", " + comm_method + "," + String.valueOf(time) +
+                    + ", " + comm_method + "," + connInt + "," + String.valueOf(time) +
                     "\n");
         }
         mWriteJitterThread = new Thread(new SaveToFileRunnable(file, out.toString().getBytes(), false));
@@ -355,10 +355,10 @@ public class BenchmarkClient extends Activity{
                 writeUpdate(serverMeasurements.length + " server measurements available");
                 mBenchmarkClient.requestThroughput();
                 writeUpdate("Writing results to file...");
-                writeStartupLatencyToFile (Build.DISPLAY, mServerID, mtu, getCommMethodString(commMethod), mStartupLatency);
-                writePayloadLatencyToFile(Build.DISPLAY, mServerID, mtu, getCommMethodString(commMethod), serverMeasurements[serverMeasurements.length - 1]);
-                writeOpLatencyToFile(Build.DISPLAY,mServerID, mtu, getCommMethodString(commMethod), clientMeasurements);
-                writeJitterToFile(Build.DISPLAY,mServerID, mtu, getCommMethodString(commMethod), serverMeasurements);
+                writeStartupLatencyToFile (Build.DISPLAY, mServerID, mtu, getCommMethodString(commMethod), connInterval, mStartupLatency);
+                writePayloadLatencyToFile(Build.DISPLAY, mServerID, mtu, getCommMethodString(commMethod), connInterval, serverMeasurements[serverMeasurements.length - 1]);
+                writeOpLatencyToFile(Build.DISPLAY,mServerID, mtu, getCommMethodString(commMethod), connInterval, clientMeasurements);
+                writeJitterToFile(Build.DISPLAY,mServerID, mtu, getCommMethodString(commMethod), connInterval, serverMeasurements);
 
                 mCloseHandler.postDelayed(new Runnable() {
                     public void run() {
