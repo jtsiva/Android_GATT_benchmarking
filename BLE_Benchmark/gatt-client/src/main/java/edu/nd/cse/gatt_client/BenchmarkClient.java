@@ -218,7 +218,7 @@ public class BenchmarkClient extends Activity{
                                        long [] jitter) {
         String timeSuffix = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
         File file = new File(this.getExternalFilesDir(null), "jitter-" + timeSuffix + ".csv");
-        StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, conn_int, conn_priority, jitter\n");
+        StringBuilder out = new StringBuilder("client_device_id, server_device_id, phone_vendor, bt_version, bt_vendor, mtu, comm_method, conn_int, jitter\n");
 
         for (long time : jitter) {
             out.append(clientID + ", " + serverID + ", unknown, unknown, unknown, " + String.valueOf(mtu)
