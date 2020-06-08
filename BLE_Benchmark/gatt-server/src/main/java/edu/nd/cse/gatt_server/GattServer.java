@@ -401,17 +401,20 @@ public class GattServer extends BluetoothGattServerCallback {
     }
 
     /**
+     * Handle a request to write a descriptor. This is used to enable notifications
      *
-     * @param device
-     * @param requestId
-     * @param descriptor
-     * @param preparedWrite
-     * @param responseNeeded
-     * @param offset
-     * @param value
+     * @param device - the bluetooth device sending the read request
+     * @param requestId  - the ID of the request
+     * @param descriptor - the descriptor to write to
+     * @param preparedWrite - whether or not we are using a prepared write
+     * @param responseNeeded - whether or not a response is needed
+     * @param offset - the desired offset into the descriptor value to write
+     * @param value - the value to write to the descriptor
      */
     @Override
-    public void onDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptor descriptor, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
+    public void onDescriptorWriteRequest(BluetoothDevice device, int requestId,
+                                         BluetoothGattDescriptor descriptor, boolean preparedWrite,
+                                         boolean responseNeeded, int offset, byte[] value) {
         Log.i(INFO_TAG, device + " registering");
         if (CLIENT_UUID.equals(descriptor.getUuid())) {
             if (Arrays.equals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE, value)) {
