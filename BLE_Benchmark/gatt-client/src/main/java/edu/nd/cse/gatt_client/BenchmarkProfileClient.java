@@ -370,6 +370,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * @param commMethod - the method defined in BenchmarkProfile
      */
     private void setCommMethod (int commMethod){
+        mCommMethod = commMethod;
         mGattClient.setCommMethod(mServerAddress, commMethod);
     }
 
@@ -392,7 +393,16 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
 
         @Override
         public void commMethodUpdate(String address, int method){
-
+            if (method == mCommMethod) {
+                //success
+                Log.d(TAG, "comm method updated!");
+                mCommMethodState = true;
+            }
+            else{
+                //failure
+                mCB.onBenchmarkError(BenchmarkProfileClientCallback.SET_COMM_METHOD_ERROR
+                        , "set comm method to " + mCommMethod + ", but there was an error");
+            }
         }
 
         @Override

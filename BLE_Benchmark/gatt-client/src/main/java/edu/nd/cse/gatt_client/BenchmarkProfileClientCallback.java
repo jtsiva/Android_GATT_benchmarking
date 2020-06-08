@@ -4,6 +4,7 @@ public interface BenchmarkProfileClientCallback {
 
     public static final int SET_MTU_ERROR = -1;
     public static final int SET_CONN_INTERVAL_ERROR = -2;
+    public static final int SET_COMM_METHOD_ERROR = -3;
 
     public void onBenchmarkStart ();
 
