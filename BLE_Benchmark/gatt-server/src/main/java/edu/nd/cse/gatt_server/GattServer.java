@@ -6,6 +6,7 @@ import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
 
 /* BLE imports */
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothDevice;
@@ -31,6 +32,8 @@ import android.util.Log;
 
 /* misc imports */
 import java.io.File;
+import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Class that implements the gatt server that implements all of the callbacks
@@ -395,6 +398,42 @@ public class GattServer extends BluetoothGattServerCallback {
         super.onMtuChanged(device, mtu);
         Log.i("Gatt", "MTU set to: " + String.valueOf(mtu));
         mConnUpdater.mtuUpdate(device.getAddress(), mtu);
+    }
+
+    /**
+     *
+     * @param device
+     * @param requestId
+     * @param descriptor
+     * @param preparedWrite
+     * @param responseNeeded
+     * @param offset
+     * @param value
+     */
+    @Override
+    public void onDescriptorWriteRequest(BluetoothDevice device, int requestId, BluetoothGattDescriptor descriptor, boolean preparedWrite, boolean responseNeeded, int offset, byte[] value) {
+        Log.i(INFO_TAG, device + " registering");
+        if (CLIENT_UUID.equals(descriptor.getUuid())) {
+            if (Arrays.equals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE, value)) {
+                mRegisteredDevices.add(device);
+                notifyOnConnected(this);
+                // TODO: send list of registered devices
+            } else if (Arrays.equals(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE, value)) {
+                mRegisteredDevices.remove(device);
+                notifyOnDisconnected(this);
+            }
+
+            if (responseNeeded) {
+                mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, null);
+            }
+
+
+        } else {
+            Log.w(INFO_TAG, "Unknown descriptor write request");
+            if (responseNeeded) {
+                mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE, 0, null);
+            }
+        }
     }
 
 }
