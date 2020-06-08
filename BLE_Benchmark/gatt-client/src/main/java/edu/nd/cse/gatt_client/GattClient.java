@@ -13,6 +13,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -374,9 +375,14 @@ public class GattClient extends BluetoothGattCallback
      *
      * @param commMethod
      */
-    public void setCommMethod (int commMethod, UUID charUUID) {
+    public void setCommMethod (String address, int commMethod) {
         mCommMethod = commMethod; //save because we need for later
         int writeType = -1;
+
+        BluetoothGattService service = mConnectedDevices.get(address).getService(mTargetService);
+        BluetoothGattCharacteristic characteristic = service.getCharacteristic(charUUID);
+
+
         switch(commMethod){
             case BenchmarkProfile.WRITE_REQ:
                 writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT;
@@ -384,12 +390,35 @@ public class GattClient extends BluetoothGattCallback
             case BenchmarkProfile.WRITE_CMD:
                 writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE;
                 break;
+            case BenchmarkProfile.NOTIFY:
+                // Setup notifications on test characteristic changes (i.e. data received).
+                // First call setCharacteristicNotification to enable notification.
+                if (!mConnectedDevices.get(address).setCharacteristicNotification(characteristic, true)) {
+                    // Stop if the characteristic notification setup failed.
+                    Log.e(TAG, "onServicesDiscovered notification setup failed");
+                    mConnUpdater.commMethodUpdate(address, -1);
+                }
+                // Next update the test characteristic's client descriptor to enable notifications.
+                BluetoothGattDescriptor desc = characteristic.getDescriptor(BenchmarkProfile.TEST_DESC);
+                if (desc == null) {
+                    // Stop if the test characteristic has no client descriptor.
+                    Log.e(TAG, "onServicesDiscovered no client descriptor");
+                    mConnUpdater.commMethodUpdate(address, -1);
+
+                }
+                desc.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                if (!mConnectedDevices.get(address).writeDescriptor(desc)) {
+                    // Stop if the client descriptor could not be written.
+                    Log.e(TAG, "onServicesDiscovered descriptor could not be written");
+                    mConnUpdater.commMethodUpdate(address, -1);
+                }
+                break;
         }
 
-        for (Map.Entry<String, BluetoothGatt> entry : mConnectedDevices.entrySet()) {
-            BluetoothGattService service = entry.getValue().getService(mTargetService);
-            BluetoothGattCharacteristic characteristic = service.getCharacteristic(charUUID);
+        if (-1 != writeType) {
             characteristic.setWriteType(writeType);
+
+            mConnUpdater.commMethodUpdate(address, commMethod);
         }
     }
 
