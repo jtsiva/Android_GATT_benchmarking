@@ -7,6 +7,7 @@ import edu.nd.cse.benchmarkcommon.GattData;
 import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
 
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.os.SystemClock;
 import android.text.TextUtils;
@@ -106,8 +107,13 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         BluetoothGattService service = new BluetoothGattService(BENCHMARK_SERVICE,
                 BluetoothGattService.SERVICE_TYPE_PRIMARY);
 
-        BluetoothGattCharacteristic writeChar = new BluetoothGattCharacteristic(BenchmarkProfile.TEST_CHAR,
-                BluetoothGattCharacteristic.PROPERTY_WRITE, BluetoothGattCharacteristic.PERMISSION_WRITE);
+        BluetoothGattCharacteristic testChar = new BluetoothGattCharacteristic(BenchmarkProfile.TEST_CHAR,
+                BluetoothGattCharacteristic.PROPERTY_NOTIFY | BluetoothGattCharacteristic.PROPERTY_WRITE,
+                BluetoothGattCharacteristic.PERMISSION_WRITE | BluetoothGattCharacteristic.PERMISSION_READ);
+
+        BluetoothGattDescriptor testDesc = new new BluetoothGattDescriptor(BenchmarkProfile.TEST_DESC,
+                BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
+        testChar.addDescriptor(testDesc);
 
         BluetoothGattCharacteristic rawDataChar = new BluetoothGattCharacteristic(BenchmarkProfile.RAW_DATA_CHAR,
                 BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
@@ -118,7 +124,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         BluetoothGattCharacteristic idChar = new BluetoothGattCharacteristic(BenchmarkProfile.ID_CHAR,
                 BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
 
-        service.addCharacteristic (writeChar);
+        service.addCharacteristic (testChar);
         service.addCharacteristic (rawDataChar);
         service.addCharacteristic (latencyChar);
         service.addCharacteristic (idChar);
