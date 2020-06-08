@@ -595,4 +595,24 @@ public class GattClient extends BluetoothGattCallback
             performOperation(data);
         }
     }
+
+    /**
+     * Determine the status descriptor write process
+     *
+     * @param gatt - the gatt instance for the connected device
+     * @param descriptor - the descriptor associated with the write operation
+     * @param status - whether the write operation was successful or not
+     */
+    @Override
+    public void onDescriptorWrite (BluetoothGatt gatt,
+                                   BluetoothGattDescriptor descriptor,
+                                   int status){
+        if (status == BluetoothGatt.GATT_SUCCESS) {
+            mConnUpdater.commMethodUpdate(gatt.getDevice().getAddress(), BenchmarkProfile.NOTIFY);
+        }
+        else {
+            Log.w(TAG, "Failed writing descriptor " + descriptor.getUuid().toString());
+            mConnUpdater.commMethodUpdate(gatt.getDevice().getAddress(), -1);
+        }
+    }
 }
