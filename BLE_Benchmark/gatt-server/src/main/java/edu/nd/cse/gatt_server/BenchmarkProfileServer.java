@@ -9,6 +9,7 @@ import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
+import android.os.Handler;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
@@ -16,6 +17,7 @@ import android.content.Context;
 import android.os.Build;
 
 import java.io.File;
+import java.util.Random;
 import java.util.UUID;
 import java.nio.ByteBuffer;
 
@@ -45,10 +47,20 @@ public class BenchmarkProfileServer extends BenchmarkProfile
     private long mPacketsReceived = 0;
     private int mMtu = 0;
     private int mConnInterval = 0;
+    private int mCommMethod = 0;
+
+    private long mBenchmarkDuration = 0;
+    private long mBenchmarkBytesSent = 0;
 
     private GattServer mGattServer;
     private BenchmarkProfileServerCallback mCB;
     private boolean mBenchmarkStarted = false;
+
+    private Handler mBenchmarkHandler = new Handler();
+
+    private boolean mRun;
+
+    private String mTargetDev;
 
 
     /**
@@ -67,6 +79,8 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         mGattServer = new GattServer (context, createBenchmarkService());
         mGattServer.setCharacteristicHandler(this);
         mGattServer.setConnectionUpdateCallback(new ConnectionUpdater (){
+            public void commMethodUpdate(int commMethod) {mCommMethod = commMethod; }
+
             public void mtuUpdate(int mtu) {
                 mMtu = mtu;
             }
@@ -78,6 +92,8 @@ public class BenchmarkProfileServer extends BenchmarkProfile
             public void connectionUpdate (String address, int state){
                 if (0 == state) {
                     mCB.onBenchmarkComplete();
+                } else {
+                    mTargetDev = address;
                 }
             }
         });
@@ -132,6 +148,44 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         return service;
     }
 
+    /**
+     * Create some random bytes and pass them off to the Gatt layer directed
+     * at the test device. Schedule to do this again after conn interval ms if
+     * this will not exceed the benchmark duration. Call onBenchmarkComplete
+     * when done.
+     *
+     * Data to be sent is a pseudo-random collection of bits as suggested by
+     * RFC4814 (https://tools.ietf.org/html/rfc4814#section-3). Since the data
+     * to be sent *could* be encoded or compressed, it is imperative to not
+     * just test using alpha-numeric characters.
+     */
+    private Runnable goTest = new Runnable () {
+        @Override
+        public void run() {
+            int packetSize = mMtu - 3;
+            if (packetSize + mBenchmarkBytesSent > mBenchmarkDuration){
+
+                packetSize = Math.toIntExact(mBenchmarkDuration - mBenchmarkBytesSent);
+            }
+            byte [] b = new byte[packetSize];
+            new Random().nextBytes(b);
+
+
+            GattData data = new GattData(mTargetDev, BenchmarkProfile.TEST_CHAR, b);
+            mBenchmarkBytesSent += packetSize;
+
+            mGattServer.handleCharacteristic(data);
+
+            long now = SystemClock.elapsedRealtimeNanos ();
+
+
+            if (mBenchmarkBytesSent < mBenchmarkDuration) {
+                mBenchmarkHandler.postDelayed(this, mConnInterval);
+            }
+
+        }
+    };
+
 
     /**
      * Callback to be called by GATT layer to handle a characteristic. All the
@@ -163,7 +217,9 @@ public class BenchmarkProfileServer extends BenchmarkProfile
 
     /**
      * Since the data will be junk, just count the number of bytes received,
-     * increment the number of packets, and record the time
+     * increment the number of packets, and record the time in the case of
+     * writes. If we are using notifications, then we will be sent the byte
+     * duration to use.
      *
      * @return data with sender address, char uuid, and null buffer
      */
@@ -175,20 +231,29 @@ public class BenchmarkProfileServer extends BenchmarkProfile
 
         GattData response = null;
 
-        if (null != data && null != data.mBuffer) {
-            mBytesReceived += data.mBuffer.length;
-            mPacketsReceived += 1;
-            if (!timerStarted()) {
-                startTiming();
-            }
-            else {
-                recordTimeDiff();
-            }
+        if (mCommMethod == BenchmarkProfile.NOTIFY) {
+            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+            buffer.put(data.mBuffer);
+            buffer.flip();//need flip
+            mBenchmarkDuration = buffer.getLong();
 
-            response = data;
-            response.mBuffer = null;
+            mBenchmarkHandler.post(goTest);
         } else {
-            Log.w (TAG, "null data received!");
+
+            if (null != data && null != data.mBuffer) {
+                mBytesReceived += data.mBuffer.length;
+                mPacketsReceived += 1;
+                if (!timerStarted()) {
+                    startTiming();
+                } else {
+                    recordTimeDiff();
+                }
+
+                response = data;
+                response.mBuffer = null;
+            } else {
+                Log.w(TAG, "null data received!");
+            }
         }
 
         return response;

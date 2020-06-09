@@ -28,6 +28,7 @@ import android.os.ParcelUuid;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.SystemClock;
 import android.util.Log;
 
 /* misc imports */
@@ -45,7 +46,8 @@ import java.util.concurrent.LinkedBlockingQueue;
  * outgoing information is not included here. At this layer we only deal with
  * in and out-bound bytes.
  */
-public class GattServer extends BluetoothGattServerCallback {
+public class GattServer extends BluetoothGattServerCallback
+                        implements CharacteristicHandler{
     private static final String TAG = BenchmarkServer.class.getSimpleName();
 
     /* Bluetooth API */
@@ -273,6 +275,52 @@ public class GattServer extends BluetoothGattServerCallback {
             Log.w(TAG, "LE Advertise Failed: "+errorCode);
         }
     };
+
+
+    /**
+     * The handler called by the profile. Adds the data to the operation queue.
+     *
+     * @param data - data to be sent
+     */
+    @Override
+    public GattData handleCharacteristic(GattData data) {
+        if (null != data) {
+            if (null == data.mBuffer) {
+                //Log.d (TAG, "Adding read request to op queue");
+            }
+            try{
+                mOperationQueue.put(data); //blocking if full
+            }catch (InterruptedException e) {
+                //????
+                Log.w(TAG, "Queue put operation was interrupted");
+            }
+
+            if (mIsIdle) {
+                Log.d (TAG, "op queue is idle");
+                mIsIdle = false;
+                GattData readyData = mOperationQueue.poll();
+                performOperation(readyData);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Perform the requested operation.
+     *
+     * @param data - collection of information needed to perform operation
+     */
+    private void performOperation (GattData data) {
+        BluetoothGattCharacteristic characteristic = mBluetoothGattService.getCharacteristic(data.mCharID);
+
+
+        long opInit = SystemClock.elapsedRealtimeNanos ();
+        characteristic.setValue(data.mBuffer);
+        boolean res = mBluetoothGattServer.notifyCharacteristicChanged(mConnectedDevices.get(data.mAddress),
+                                                                        characteristic,
+                                                                        false);
+    }
 
 
     /**

@@ -298,6 +298,10 @@ public class BenchmarkClient extends Activity{
         writeUpdate("\tClient ID: " + Build.DISPLAY);
         writeUpdate("----------------------------");
 
+        if (commMethod == BenchmarkProfile.NOTIFY && 1 == durationIsTime) {
+            writeUpdate("ERROR. Cannot run notifications with a time as a duration.");
+        }
+
         // Devices with a display should not go to sleep
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
