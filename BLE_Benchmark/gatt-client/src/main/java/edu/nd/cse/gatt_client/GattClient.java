@@ -372,15 +372,17 @@ public class GattClient extends BluetoothGattCallback
     }
 
     /**
+     * Updates the method of communication. Result can be asynchronous
      *
-     * @param commMethod
+     * @param address - the device for whom the method is updated
+     * @param commMethod - the method to set
      */
-    public void setCommMethod (String address, int commMethod) {
+    public void commMethodUpdate (String address, int commMethod) {
         mCommMethod = commMethod; //save because we need for later
         int writeType = -1;
 
         BluetoothGattService service = mConnectedDevices.get(address).getService(mTargetService);
-        BluetoothGattCharacteristic characteristic = service.getCharacteristic(charUUID);
+        BluetoothGattCharacteristic characteristic = service.getCharacteristic(BenchmarkProfile.TEST_CHAR);
 
 
         switch(commMethod){

@@ -371,7 +371,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      */
     private void setCommMethod (int commMethod){
         mCommMethod = commMethod;
-        mGattClient.setCommMethod(mServerAddress, commMethod);
+        mGattClient.commMethodUpdate(mServerAddress, commMethod);
     }
 
     /**

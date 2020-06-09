@@ -111,7 +111,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
                 BluetoothGattCharacteristic.PROPERTY_NOTIFY | BluetoothGattCharacteristic.PROPERTY_WRITE,
                 BluetoothGattCharacteristic.PERMISSION_WRITE | BluetoothGattCharacteristic.PERMISSION_READ);
 
-        BluetoothGattDescriptor testDesc = new new BluetoothGattDescriptor(BenchmarkProfile.TEST_DESC,
+        BluetoothGattDescriptor testDesc = new BluetoothGattDescriptor(BenchmarkProfile.TEST_DESC,
                 BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         testChar.addDescriptor(testDesc);
 

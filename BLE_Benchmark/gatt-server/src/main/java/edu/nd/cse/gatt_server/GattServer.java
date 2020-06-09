@@ -33,7 +33,11 @@ import android.util.Log;
 /* misc imports */
 import java.io.File;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Class that implements the gatt server that implements all of the callbacks
@@ -49,6 +53,10 @@ public class GattServer extends BluetoothGattServerCallback {
     private BluetoothGattServer mBluetoothGattServer;
     private BluetoothLeAdvertiser mBluetoothLeAdvertiser;
     private BluetoothGattService mBluetoothGattService;
+
+    private Map<String, BluetoothDevice> mConnectedDevices = new HashMap<String, BluetoothDevice>();
+    private final BlockingQueue<GattData> mOperationQueue = new LinkedBlockingQueue<GattData>(32);
+    private boolean mIsIdle = true;
 
     private CharacteristicHandler mHandler;
     private GattData mCharReadResponse;
@@ -401,7 +409,7 @@ public class GattServer extends BluetoothGattServerCallback {
     }
 
     /**
-     * Handle a request to write a descriptor. This is used to enable notifications
+     * Handle a request to write a descriptor. This can be used to enable notifications
      *
      * @param device - the bluetooth device sending the read request
      * @param requestId  - the ID of the request
@@ -415,28 +423,17 @@ public class GattServer extends BluetoothGattServerCallback {
     public void onDescriptorWriteRequest(BluetoothDevice device, int requestId,
                                          BluetoothGattDescriptor descriptor, boolean preparedWrite,
                                          boolean responseNeeded, int offset, byte[] value) {
-        Log.i(INFO_TAG, device + " registering");
-        if (CLIENT_UUID.equals(descriptor.getUuid())) {
-            if (Arrays.equals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE, value)) {
-                mRegisteredDevices.add(device);
-                notifyOnConnected(this);
-                // TODO: send list of registered devices
-            } else if (Arrays.equals(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE, value)) {
-                mRegisteredDevices.remove(device);
-                notifyOnDisconnected(this);
-            }
 
-            if (responseNeeded) {
-                mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, null);
-            }
-
-
-        } else {
-            Log.w(INFO_TAG, "Unknown descriptor write request");
-            if (responseNeeded) {
-                mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE, 0, null);
-            }
+        if (Arrays.equals(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE, value)) {
+            mConnectedDevices.put(device.getAddress(), device);
+        } else if (Arrays.equals(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE, value)) {
+            mConnectedDevices.remove(device.getAddress());
         }
+
+        if (responseNeeded) {
+            mBluetoothGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, null);
+        }
+
     }
 
 }
