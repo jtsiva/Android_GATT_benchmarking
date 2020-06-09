@@ -1,7 +1,6 @@
 package edu.nd.cse.gatt_server;
 
-import edu.nd.cse.benchmarkcommon.BenchmarkProfile;
-import edu.nd.cse.benchmarkcommon.SaveToFileRunnable;
+import edu.nd.cse.benchmarkcommon.BenchmarkService;
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
 import edu.nd.cse.benchmarkcommon.GattData;
 import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
@@ -11,14 +10,11 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.os.Handler;
 import android.os.SystemClock;
-import android.text.TextUtils;
 import android.util.Log;
 import android.content.Context;
 import android.os.Build;
 
-import java.io.File;
 import java.util.Random;
-import java.util.UUID;
 import java.nio.ByteBuffer;
 
 /**
@@ -34,9 +30,9 @@ import java.nio.ByteBuffer;
 *   - boolean on start function to indicate whether or not to continue
 *     advertising after a connection has been made
 * */
-public class BenchmarkProfileServer extends BenchmarkProfile
+public class BenchmarkServiceServer extends BenchmarkService
                                     implements CharacteristicHandler {
-    private static final String TAG = BenchmarkProfileServer.class.getSimpleName();
+    private static final String TAG = BenchmarkServiceServer.class.getSimpleName();
 
     private long [] mTimeDiffs; //array to hold the delta between packet ends
     private long mStartTS = 0; //timestamp from when we're told to start timing
@@ -53,7 +49,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
     private long mBenchmarkBytesSent = 0;
 
     private GattServer mGattServer;
-    private BenchmarkProfileServerCallback mCB;
+    private BenchmarkServiceServerCallback mCB;
     private boolean mBenchmarkStarted = false;
 
     private Handler mBenchmarkHandler = new Handler();
@@ -70,8 +66,8 @@ public class BenchmarkProfileServer extends BenchmarkProfile
      * @param logToFile - whether to log the raw timestamps to a file
      *                  or store them in a circular buffer in mem
      */
-    public BenchmarkProfileServer(Context context,
-                                  BenchmarkProfileServerCallback cb){
+    public BenchmarkServiceServer(Context context,
+                                  BenchmarkServiceServerCallback cb){
         mCB = cb;
 
         mTimeDiffs = new long[MAX_DIFFS];
@@ -123,21 +119,21 @@ public class BenchmarkProfileServer extends BenchmarkProfile
         BluetoothGattService service = new BluetoothGattService(BENCHMARK_SERVICE,
                 BluetoothGattService.SERVICE_TYPE_PRIMARY);
 
-        BluetoothGattCharacteristic testChar = new BluetoothGattCharacteristic(BenchmarkProfile.TEST_CHAR,
+        BluetoothGattCharacteristic testChar = new BluetoothGattCharacteristic(BenchmarkService.TEST_CHAR,
                 BluetoothGattCharacteristic.PROPERTY_NOTIFY | BluetoothGattCharacteristic.PROPERTY_WRITE,
                 BluetoothGattCharacteristic.PERMISSION_WRITE | BluetoothGattCharacteristic.PERMISSION_READ);
 
-        BluetoothGattDescriptor testDesc = new BluetoothGattDescriptor(BenchmarkProfile.TEST_DESC,
+        BluetoothGattDescriptor testDesc = new BluetoothGattDescriptor(BenchmarkService.TEST_DESC,
                 BluetoothGattCharacteristic.PERMISSION_READ | BluetoothGattCharacteristic.PERMISSION_WRITE);
         testChar.addDescriptor(testDesc);
 
-        BluetoothGattCharacteristic rawDataChar = new BluetoothGattCharacteristic(BenchmarkProfile.RAW_DATA_CHAR,
+        BluetoothGattCharacteristic rawDataChar = new BluetoothGattCharacteristic(BenchmarkService.RAW_DATA_CHAR,
                 BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
 
-        BluetoothGattCharacteristic latencyChar = new BluetoothGattCharacteristic(BenchmarkProfile.LATENCY_CHAR,
+        BluetoothGattCharacteristic latencyChar = new BluetoothGattCharacteristic(BenchmarkService.LATENCY_CHAR,
                 BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
 
-        BluetoothGattCharacteristic idChar = new BluetoothGattCharacteristic(BenchmarkProfile.ID_CHAR,
+        BluetoothGattCharacteristic idChar = new BluetoothGattCharacteristic(BenchmarkService.ID_CHAR,
                 BluetoothGattCharacteristic.PROPERTY_READ, BluetoothGattCharacteristic.PERMISSION_READ);
 
         service.addCharacteristic (testChar);
@@ -171,7 +167,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
             new Random().nextBytes(b);
 
 
-            GattData data = new GattData(mServerAddress, BenchmarkProfile.TEST_CHAR, b);
+            GattData data = new GattData(mServerAddress, BenchmarkService.TEST_CHAR, b);
             mBenchmarkBytesSent += packetSize;
 
             mGattServer.handleCharacteristic(data);
@@ -198,17 +194,17 @@ public class BenchmarkProfileServer extends BenchmarkProfile
     @Override
     public GattData handleCharacteristic (GattData data) {
         GattData response = null;
-        if (BenchmarkProfile.TEST_CHAR.equals(data.mCharID))
+        if (BenchmarkService.TEST_CHAR.equals(data.mCharID))
         {
             response = handleTestCharacteristic(data);
         }
-        else if (BenchmarkProfile.RAW_DATA_CHAR.equals(data.mCharID)){
+        else if (BenchmarkService.RAW_DATA_CHAR.equals(data.mCharID)){
             response = handleRawDataRequest();
         }
-        else if (BenchmarkProfile.LATENCY_CHAR.equals(data.mCharID)){
+        else if (BenchmarkService.LATENCY_CHAR.equals(data.mCharID)){
             response = handleLatencyRequest();
         }
-        else if (BenchmarkProfile.ID_CHAR.equals(data.mCharID)){
+        else if (BenchmarkService.ID_CHAR.equals(data.mCharID)){
             response = handleIDRequest();
         }
 
@@ -231,7 +227,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
 
         GattData response = null;
 
-        if (mCommMethod == BenchmarkProfile.NOTIFY)) {
+        if (mCommMethod == BenchmarkService.NOTIFY)) {
             ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
             buffer.put(data.mBuffer);
             buffer.flip();//need flip

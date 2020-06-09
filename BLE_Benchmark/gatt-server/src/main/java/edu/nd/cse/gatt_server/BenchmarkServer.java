@@ -30,7 +30,7 @@ public class BenchmarkServer extends Activity{
     private TextView mUpdates;
 
     /* Benchmarking Profile Server */
-    private BenchmarkProfileServer mBenchmarkServer;
+    private BenchmarkServiceServer mBenchmarkServer;
 
     private Handler mCloseHandler = new Handler();
 
@@ -140,7 +140,7 @@ public class BenchmarkServer extends Activity{
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         //start profile
-        mBenchmarkServer = new BenchmarkProfileServer(this, new BenchmarkProfileServerCallback () {
+        mBenchmarkServer = new BenchmarkServiceServer(this, new BenchmarkServiceServerCallback() {
             @Override
             public void onBenchmarkStart () {
                 Timestamp ts = new Timestamp(new Date().getTime());

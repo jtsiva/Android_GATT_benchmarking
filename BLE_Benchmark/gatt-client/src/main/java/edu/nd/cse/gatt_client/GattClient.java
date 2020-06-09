@@ -1,11 +1,11 @@
 package edu.nd.cse.gatt_client;
 
+import edu.nd.cse.benchmarkcommon.BenchmarkService;
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
 import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
 import edu.nd.cse.benchmarkcommon.ConnectionUpdaterIFace;
 import edu.nd.cse.benchmarkcommon.GattData;
 import edu.nd.cse.benchmarkcommon.UiUpdate;
-import edu.nd.cse.benchmarkcommon.BenchmarkProfile;
 
 
 import android.bluetooth.BluetoothAdapter;
@@ -382,17 +382,17 @@ public class GattClient extends BluetoothGattCallback
         int writeType = -1;
 
         BluetoothGattService service = mConnectedDevices.get(address).getService(mTargetService);
-        BluetoothGattCharacteristic characteristic = service.getCharacteristic(BenchmarkProfile.TEST_CHAR);
+        BluetoothGattCharacteristic characteristic = service.getCharacteristic(BenchmarkService.TEST_CHAR);
 
 
         switch(commMethod){
-            case BenchmarkProfile.WRITE_REQ:
+            case BenchmarkService.WRITE_REQ:
                 writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT;
                 break;
-            case BenchmarkProfile.WRITE_CMD:
+            case BenchmarkService.WRITE_CMD:
                 writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE;
                 break;
-            case BenchmarkProfile.NOTIFY:
+            case BenchmarkService.NOTIFY:
                 // Setup notifications on test characteristic changes (i.e. data received).
                 // First call setCharacteristicNotification to enable notification.
                 if (!mConnectedDevices.get(address).setCharacteristicNotification(characteristic, true)) {
@@ -401,7 +401,7 @@ public class GattClient extends BluetoothGattCallback
                     mConnUpdater.commMethodUpdate(address, -1);
                 }
                 // Next update the test characteristic's client descriptor to enable notifications.
-                BluetoothGattDescriptor desc = characteristic.getDescriptor(BenchmarkProfile.TEST_DESC);
+                BluetoothGattDescriptor desc = characteristic.getDescriptor(BenchmarkService.TEST_DESC);
                 if (desc == null) {
                     // Stop if the test characteristic has no client descriptor.
                     Log.e(TAG, "onServicesDiscovered no client descriptor");
@@ -610,7 +610,7 @@ public class GattClient extends BluetoothGattCallback
                                    BluetoothGattDescriptor descriptor,
                                    int status){
         if (status == BluetoothGatt.GATT_SUCCESS) {
-            mConnUpdater.commMethodUpdate(gatt.getDevice().getAddress(), BenchmarkProfile.NOTIFY);
+            mConnUpdater.commMethodUpdate(gatt.getDevice().getAddress(), BenchmarkService.NOTIFY);
         }
         else {
             Log.w(TAG, "Failed writing descriptor " + descriptor.getUuid().toString());

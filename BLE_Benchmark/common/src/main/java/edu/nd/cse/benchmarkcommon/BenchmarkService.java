@@ -41,7 +41,7 @@ import java.util.UUID;
  * Note that the (x) in the above lists indicates required interaction with at
  * least one other device.
  * */
-public class BenchmarkProfile {
+public class BenchmarkService {
 
     protected final int MAX_DIFFS = 1000;
 

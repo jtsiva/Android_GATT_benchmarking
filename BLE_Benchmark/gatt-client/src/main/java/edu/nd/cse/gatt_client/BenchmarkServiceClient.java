@@ -1,6 +1,6 @@
 package edu.nd.cse.gatt_client;
 
-import edu.nd.cse.benchmarkcommon.BenchmarkProfile;
+import edu.nd.cse.benchmarkcommon.BenchmarkService;
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
 import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
 import edu.nd.cse.benchmarkcommon.GattData;
@@ -36,11 +36,11 @@ import java.util.Random;
  * interaction with the profile is asynchronous--fitting with how the
  * GATT communication works and how UI interactions work
  */
-public class BenchmarkProfileClient extends BenchmarkProfile implements CharacteristicHandler{
-    private static final String TAG = BenchmarkProfileClient.class.getSimpleName();
+public class BenchmarkServiceClient extends BenchmarkService implements CharacteristicHandler{
+    private static final String TAG = BenchmarkServiceClient.class.getSimpleName();
 
     private GattClient mGattClient;
-    private BenchmarkProfileClientCallback mCB;
+    private BenchmarkServiceClientCallback mCB;
     private String mServerAddress = null;
 
 
@@ -70,7 +70,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
     private boolean mConnIntervalState;
     private int mDataSize = 20;
     private boolean mDataSizeState;
-    private int mCommMethod = BenchmarkProfile.WRITE_REQ;
+    private int mCommMethod = BenchmarkService.WRITE_REQ;
     private boolean mCommMethodState;
 
 
@@ -79,8 +79,8 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * @param context - the application context
      * @param cb - callback defined by the application to handle interactions
      */
-    public BenchmarkProfileClient (Context context, BenchmarkProfileClientCallback cb) {
-        mGattClient = new GattClient(context, BenchmarkProfile.BENCHMARK_SERVICE,
+    public BenchmarkServiceClient(Context context, BenchmarkServiceClientCallback cb) {
+        mGattClient = new GattClient(context, BenchmarkService.BENCHMARK_SERVICE,
                                         this, mConnUpdater);
         mCB = cb;
     }
@@ -161,10 +161,10 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                 Log.d(TAG, "Ready to start benchmark");
                 mCB.onBenchmarkStart();
                 //kick off benchmark
-                if (mCommMethod == BenchmarkProfile.NOTIFY) {
+                if (mCommMethod == BenchmarkService.NOTIFY) {
                     mGattClient.handleCharacteristic(
                             new GattData(mServerAddress,
-                            BenchmarkProfile.TEST_CHAR,
+                            BenchmarkService.TEST_CHAR,
                             ByteBuffer.allocate(Long.BYTES).putLong(mBenchmarkDuration).array()));
                 } else {
                     mBenchmarkHandler.post(goTest);
@@ -202,7 +202,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
             }
             byte [] b = new byte[packetSize];
             new Random().nextBytes(b);
-            GattData data = new GattData(mServerAddress, BenchmarkProfile.TEST_CHAR, b);
+            GattData data = new GattData(mServerAddress, BenchmarkService.TEST_CHAR, b);
             mBenchmarkBytesSent += packetSize;
 
             mGattClient.handleCharacteristic(data);
@@ -270,7 +270,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      */
     public void requestLatencyMeasurements () {
         mGattClient.handleCharacteristic(new GattData(mServerAddress,
-                BenchmarkProfile.LATENCY_CHAR,
+                BenchmarkService.LATENCY_CHAR,
                 null));
     }
 
@@ -279,7 +279,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      */
     public void requestServerID () {
         mGattClient.handleCharacteristic(new GattData(mServerAddress,
-                BenchmarkProfile.ID_CHAR,
+                BenchmarkService.ID_CHAR,
                 null));
     }
 
@@ -291,7 +291,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      */
     @Override
     public GattData handleCharacteristic (GattData data) {
-        if (BenchmarkProfile.LATENCY_CHAR.equals(data.mCharID)) {
+        if (BenchmarkService.LATENCY_CHAR.equals(data.mCharID)) {
             ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
             buffer.put(data.mBuffer);
             buffer.flip();//need flip
@@ -310,8 +310,8 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                 System.arraycopy(mServerLatency, 0, serverLatency, 0, serverLatency.length);
                 mCB.onLatencyMeasurementsAvailable(opLatency, serverLatency);
             }
-        }else if(BenchmarkProfile.TEST_CHAR.equals(data.mCharID)
-                && BenchmarkProfile.NOTIFY != mCommMethod){
+        }else if(BenchmarkService.TEST_CHAR.equals(data.mCharID)
+                && BenchmarkService.NOTIFY != mCommMethod){
             //Gatt layer needs to time the operations, so it passes up
             //the operation latency through the test characteristic
             //This makes it easy for the GATT layer to time different
@@ -324,8 +324,8 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
             ++mLatencyIndex;
 
             data.mBuffer = null;
-        } else if(BenchmarkProfile.TEST_CHAR.equals(data.mCharID)
-                && BenchmarkProfile.NOTIFY == mCommMethod){
+        } else if(BenchmarkService.TEST_CHAR.equals(data.mCharID)
+                && BenchmarkService.NOTIFY == mCommMethod){
             //we need to capture the arrival times of the packets here
             if (null != data && null != data.mBuffer) {
                 mBytesReceived += data.mBuffer.length;
@@ -342,7 +342,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                 Log.w(TAG, "null data received!");
             }
 
-        }else if(BenchmarkProfile.ID_CHAR.equals(data.mCharID)){
+        }else if(BenchmarkService.ID_CHAR.equals(data.mCharID)){
             mCB.onServerIDAvailable(new String(data.mBuffer));
         } else{ //we can't handle this so return null
             data = null;
@@ -394,7 +394,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
      * Set the method of communication to be used by the gatt layer
      * for the benchmark
      *
-     * @param commMethod - the method defined in BenchmarkProfile
+     * @param commMethod - the method defined in BenchmarkService
      */
     private void setCommMethod (int commMethod){
         mCommMethod = commMethod;
@@ -427,7 +427,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
             }
             else{
                 //failure
-                mCB.onBenchmarkError(BenchmarkProfileClientCallback.SET_COMM_METHOD_ERROR
+                mCB.onBenchmarkError(BenchmarkServiceClientCallback.SET_COMM_METHOD_ERROR
                         , "set comm method to " + mCommMethod + ", but there was an error");
             }
         }
@@ -435,7 +435,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
         @Override
         public void mtuUpdate(String address, int mtu){
             if (0 == mtu) {
-                mCB.onBenchmarkError(BenchmarkProfileClientCallback.SET_MTU_ERROR
+                mCB.onBenchmarkError(BenchmarkServiceClientCallback.SET_MTU_ERROR
                         , "set MTU to " + mMtu + ", but there was an error");
             }
             else {
@@ -457,7 +457,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
         @Override
         public void connIntervalUpdate (String address, int interval){
             if (interval != mConnInterval) {
-                mCB.onBenchmarkError(BenchmarkProfileClientCallback.SET_CONN_INTERVAL_ERROR
+                mCB.onBenchmarkError(BenchmarkServiceClientCallback.SET_CONN_INTERVAL_ERROR
                         , "set connInterval to " + mConnInterval
                                 + ", but there was an error");
             }

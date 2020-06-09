@@ -1,6 +1,6 @@
 package edu.nd.cse.gatt_client;
 
-public interface BenchmarkProfileClientCallback {
+public interface BenchmarkServiceClientCallback {
 
     public static final int SET_MTU_ERROR = -1;
     public static final int SET_CONN_INTERVAL_ERROR = -2;

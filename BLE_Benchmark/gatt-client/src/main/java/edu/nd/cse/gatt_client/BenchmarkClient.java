@@ -2,7 +2,7 @@ package edu.nd.cse.gatt_client;
 
 import edu.nd.cse.benchmarkcommon.SaveToFileRunnable;
 import edu.nd.cse.benchmarkcommon.BluetoothRestarter;
-import edu.nd.cse.benchmarkcommon.BenchmarkProfile;
+import edu.nd.cse.benchmarkcommon.BenchmarkService;
 
 import android.Manifest;
 import android.content.Context;
@@ -13,7 +13,6 @@ import android.widget.TextView;
 import android.app.Activity;
 import android.util.Log;
 import android.view.WindowManager;
-import android.widget.TextView;
 import android.os.Bundle;
 import android.os.Build;
 
@@ -27,7 +26,7 @@ import java.text.SimpleDateFormat;
  * Activity that runs the client side of the BLE benchmark
  */
 public class BenchmarkClient extends Activity{
-    private static final String TAG = BenchmarkProfileClient.class.getSimpleName();
+    private static final String TAG = BenchmarkServiceClient.class.getSimpleName();
 
     private BluetoothRestarter mBTRestarter = new BluetoothRestarter(this);
 
@@ -36,12 +35,12 @@ public class BenchmarkClient extends Activity{
     private TextView mUpdates;
 
     /* Profile related things */
-    private BenchmarkProfileClient mBenchmarkClient;
+    private BenchmarkServiceClient mBenchmarkClient;
 
     /* Default parameters */
     private final int DEFAULT_MTU = 23;
     private final int DEFAULT_DATA_SIZE = 20;
-    private final int DEFAULT_COMM_METHOD = BenchmarkProfile.WRITE_REQ;
+    private final int DEFAULT_COMM_METHOD = BenchmarkService.WRITE_REQ;
     private final int DEFAULT_CONN_INTERVAL = 0;
     private final int DEFAULT_DURATION = 10000;
     private final int DEFAULT_DURATION_IS_TIME  = 1;
@@ -233,23 +232,23 @@ public class BenchmarkClient extends Activity{
      * Determine the appropriate string to return given the integer
      * representation of the communication method. For UI purposes.
      *
-     * @param commMethod the communication method as defined in BenchmarkProfile
+     * @param commMethod the communication method as defined in BenchmarkService
      * @return the appropriate name for the comm method
      */
     private String getCommMethodString (int commMethod) {
         String retStr;
         switch(commMethod) {
-            case BenchmarkProfile.WRITE_REQ:
-                retStr = BenchmarkProfile.WRITE_REQ_STR;
+            case BenchmarkService.WRITE_REQ:
+                retStr = BenchmarkService.WRITE_REQ_STR;
                 break;
-            case BenchmarkProfile.WRITE_CMD:
-                retStr = BenchmarkProfile.WRITE_CMD_STR;
+            case BenchmarkService.WRITE_CMD:
+                retStr = BenchmarkService.WRITE_CMD_STR;
                 break;
-            case BenchmarkProfile.READ:
-                retStr = BenchmarkProfile.READ_STR;
+            case BenchmarkService.READ:
+                retStr = BenchmarkService.READ_STR;
                 break;
-            case BenchmarkProfile.NOTIFY:
-                retStr = BenchmarkProfile.NOTIFY_STR;
+            case BenchmarkService.NOTIFY:
+                retStr = BenchmarkService.NOTIFY_STR;
                 break;
             default:
                 retStr = "unknown";
@@ -298,14 +297,14 @@ public class BenchmarkClient extends Activity{
         writeUpdate("\tClient ID: " + Build.DISPLAY);
         writeUpdate("----------------------------");
 
-        if (commMethod == BenchmarkProfile.NOTIFY && 1 == durationIsTime) {
+        if (commMethod == BenchmarkService.NOTIFY && 1 == durationIsTime) {
             writeUpdate("ERROR. Cannot run notifications with a time as a duration.");
         }
 
         // Devices with a display should not go to sleep
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        mBenchmarkClient = new BenchmarkProfileClient (this, new BenchmarkProfileClientCallback () {
+        mBenchmarkClient = new BenchmarkServiceClient(this, new BenchmarkServiceClientCallback() {
             @Override
             public void onBenchmarkStart () {
                 Timestamp ts = new Timestamp(new Date().getTime());

@@ -32,11 +32,9 @@ import android.os.SystemClock;
 import android.util.Log;
 
 /* misc imports */
-import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -221,7 +219,7 @@ public class GattServer extends BluetoothGattServerCallback
         AdvertiseData data = new AdvertiseData.Builder()
                 .setIncludeDeviceName(false)
                 .setIncludeTxPowerLevel(false)
-                .addServiceUuid(new ParcelUuid(BenchmarkProfileServer.BENCHMARK_SERVICE))
+                .addServiceUuid(new ParcelUuid(BenchmarkServiceServer.BENCHMARK_SERVICE))
                 .build();
 
         mBluetoothLeAdvertiser
