@@ -432,7 +432,7 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
 
             setConnInterval(mConnInterval);
             setDataSize(mDataSize);
-            setCommMethod(mCommMethod);
+
         }
 
         @Override
@@ -446,6 +446,8 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                 Log.d(TAG, "Connection interval updated");
                 mConnIntervalState = true;
             }
+
+            setCommMethod(mCommMethod);
         }
     };
 
