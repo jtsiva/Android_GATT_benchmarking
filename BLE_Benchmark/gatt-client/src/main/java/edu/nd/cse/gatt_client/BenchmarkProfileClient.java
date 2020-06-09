@@ -161,7 +161,15 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                 Log.d(TAG, "Ready to start benchmark");
                 mCB.onBenchmarkStart();
                 //kick off benchmark
-                mBenchmarkHandler.post(goTest);
+                if (mCommMethod == BenchmarkProfile.NOTIFY) {
+                    mGattClient.handleCharacteristic(
+                            new GattData(mServerAddress,
+                            BenchmarkProfile.TEST_CHAR,
+                            ByteBuffer.allocate(Long.BYTES).putLong(mBenchmarkDuration).array()));
+                } else {
+                    mBenchmarkHandler.post(goTest);
+                }
+
                 mBenchmarkStart = SystemClock.elapsedRealtimeNanos ();
             } else {
                 //check back later
