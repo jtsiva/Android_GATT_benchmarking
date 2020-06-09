@@ -310,7 +310,8 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
                 System.arraycopy(mServerLatency, 0, serverLatency, 0, serverLatency.length);
                 mCB.onLatencyMeasurementsAvailable(opLatency, serverLatency);
             }
-        }else if(BenchmarkProfile.TEST_CHAR.equals(data.mCharID)){
+        }else if(BenchmarkProfile.TEST_CHAR.equals(data.mCharID)
+                && BenchmarkProfile.NOTIFY != mCommMethod){
             //Gatt layer needs to time the operations, so it passes up
             //the operation latency through the test characteristic
             //This makes it easy for the GATT layer to time different
@@ -323,6 +324,24 @@ public class BenchmarkProfileClient extends BenchmarkProfile implements Characte
             ++mLatencyIndex;
 
             data.mBuffer = null;
+        } else if(BenchmarkProfile.TEST_CHAR.equals(data.mCharID)
+                && BenchmarkProfile.NOTIFY == mCommMethod){
+            //we need to capture the arrival times of the packets here
+            if (null != data && null != data.mBuffer) {
+                mBytesReceived += data.mBuffer.length;
+                mPacketsReceived += 1;
+                if (!timerStarted()) {
+                    startTiming();
+                } else {
+                    recordTimeDiff();
+                }
+
+                response = data;
+                response.mBuffer = null;
+            } else {
+                Log.w(TAG, "null data received!");
+            }
+
         }else if(BenchmarkProfile.ID_CHAR.equals(data.mCharID)){
             mCB.onServerIDAvailable(new String(data.mBuffer));
         } else{ //we can't handle this so return null

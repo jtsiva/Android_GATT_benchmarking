@@ -60,7 +60,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
 
     private boolean mRun;
 
-    private String mTargetDev;
+    private string mTargetDev;
 
 
     /**
@@ -171,7 +171,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
             new Random().nextBytes(b);
 
 
-            GattData data = new GattData(mTargetDev, BenchmarkProfile.TEST_CHAR, b);
+            GattData data = new GattData(mServerAddress, BenchmarkProfile.TEST_CHAR, b);
             mBenchmarkBytesSent += packetSize;
 
             mGattServer.handleCharacteristic(data);
@@ -231,7 +231,7 @@ public class BenchmarkProfileServer extends BenchmarkProfile
 
         GattData response = null;
 
-        if (mCommMethod == BenchmarkProfile.NOTIFY) {
+        if (mCommMethod == BenchmarkProfile.NOTIFY)) {
             ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
             buffer.put(data.mBuffer);
             buffer.flip();//need flip
