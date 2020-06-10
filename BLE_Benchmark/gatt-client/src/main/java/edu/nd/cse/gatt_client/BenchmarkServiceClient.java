@@ -292,23 +292,20 @@ public class BenchmarkServiceClient extends BenchmarkService implements Characte
     @Override
     public GattData handleCharacteristic (GattData data) {
         if (BenchmarkService.LATENCY_CHAR.equals(data.mCharID)) {
-            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-            buffer.put(data.mBuffer);
-            buffer.flip();//need flip
-            long measurement = buffer.getLong();
+            long measurement = getLong(data);
             //Log.d(TAG, "measurement: " + measurement);
 
             if (-1 != measurement) {
-                mServerLatency[mServerLatencyIndex] = measurement;
+                mReceiverLatency[mServerLatencyIndex] = measurement;
                 ++mServerLatencyIndex;
 
-                requestLatencyMeasurements();
+                receiverLatencyMeasurements();
             } else {
                 long [] opLatency = new long [mLatencyIndex];
-                long [] serverLatency = new long [mServerLatencyIndex];
+                long [] receiverLatency = new long [mReceiverLatencyIndex];
                 System.arraycopy(mOpLatency, 0, opLatency, 0, opLatency.length);
-                System.arraycopy(mServerLatency, 0, serverLatency, 0, serverLatency.length);
-                mCB.onLatencyMeasurementsAvailable(opLatency, serverLatency);
+                System.arraycopy(mReceiverLatency, 0, receiverLatency, 0, receiverLatency.length);
+                mCB.onLatencyMeasurementsAvailable(opLatency, receiverLatency);
             }
         }else if(BenchmarkService.TEST_CHAR.equals(data.mCharID)
                 && BenchmarkService.NOTIFY != mCommMethod){
@@ -317,30 +314,13 @@ public class BenchmarkServiceClient extends BenchmarkService implements Characte
             //This makes it easy for the GATT layer to time different
             //things (according to the comm method for example) and let
             //the profile client manage the times
-            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-            buffer.put(data.mBuffer);
-            buffer.flip();//need flip
-            mOpLatency[mLatencyIndex] = buffer.getLong();
+            mOpLatency[mLatencyIndex] = this.getLong(data);
             ++mLatencyIndex;
 
             data.mBuffer = null;
         } else if(BenchmarkService.TEST_CHAR.equals(data.mCharID)
                 && BenchmarkService.NOTIFY == mCommMethod){
-            //we need to capture the arrival times of the packets here
-            if (null != data && null != data.mBuffer) {
-                mBytesReceived += data.mBuffer.length;
-                mPacketsReceived += 1;
-                if (!timerStarted()) {
-                    startTiming();
-                } else {
-                    recordTimeDiff();
-                }
-
-                response = data;
-                response.mBuffer = null;
-            } else {
-                Log.w(TAG, "null data received!");
-            }
+            handleTestCharReceive(data);
 
         }else if(BenchmarkService.ID_CHAR.equals(data.mCharID)){
             mCB.onServerIDAvailable(new String(data.mBuffer));

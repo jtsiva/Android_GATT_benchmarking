@@ -220,36 +220,15 @@ public class BenchmarkServiceServer extends BenchmarkService
      * @return data with sender address, char uuid, and null buffer
      */
     private GattData handleTestCharacteristic (GattData data){
-        if (!mBenchmarkStarted) {
-            mCB.onBenchmarkStart();
-            mBenchmarkStarted = true;
-        }
-
         GattData response = null;
 
         if (mCommMethod == BenchmarkService.NOTIFY)) {
-            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-            buffer.put(data.mBuffer);
-            buffer.flip();//need flip
-            mBenchmarkDuration = buffer.getLong();
+
+            mBenchmarkDuration = getLong (data);
 
             mBenchmarkHandler.post(goTest);
         } else {
-
-            if (null != data && null != data.mBuffer) {
-                mBytesReceived += data.mBuffer.length;
-                mPacketsReceived += 1;
-                if (!timerStarted()) {
-                    startTiming();
-                } else {
-                    recordTimeDiff();
-                }
-
-                response = data;
-                response.mBuffer = null;
-            } else {
-                Log.w(TAG, "null data received!");
-            }
+            this.handleTestCharReceive(data);
         }
 
         return response;
@@ -339,42 +318,6 @@ public class BenchmarkServiceServer extends BenchmarkService
         return new GattData (null, null, Build.DISPLAY.getBytes());
     }
 
-
-    /**
-     * Grab the time stamp so that we can track the duration of an event
-     */
-    private void startTiming() {
-        mStartTS = SystemClock.elapsedRealtimeNanos();
-    }
-
-    /**
-     *
-     * @return true if the timer has been started, false otherwise
-     */
-    private boolean timerStarted() { return !(0 == mStartTS); }
-
-    /**
-     * Record the time difference from when startTiming() was called. If we
-     * have filled the array then write the array to a file (if the file has
-     * been set).
-     */
-    private void recordTimeDiff() {
-        long ts = SystemClock.elapsedRealtimeNanos();
-        long diff = 0;
-
-        if (0 == mStartTS) {
-            Log.w (TAG, "Tried to record time stamp when timing not started");
-
-        } else {
-            diff = ts - mStartTS;
-
-            mTimeDiffs[mDiffsIndex] = diff;
-            //Log.d(TAG, "recording time difff: " +  mTimeDiffs[mDiffsIndex]);
-            ++mDiffsIndex;
-
-        }
-
-    }
 
     /**
      * Stop the gatt server. This is a clean up function that is intended to
