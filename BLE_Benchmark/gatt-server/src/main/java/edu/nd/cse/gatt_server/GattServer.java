@@ -1,5 +1,6 @@
 package edu.nd.cse.gatt_server;
 
+import edu.nd.cse.benchmarkcommon.BenchmarkService;
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
 import edu.nd.cse.benchmarkcommon.GattData;
 import edu.nd.cse.benchmarkcommon.ConnectionUpdaterIFace;
@@ -32,6 +33,7 @@ import android.os.SystemClock;
 import android.util.Log;
 
 /* misc imports */
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,7 +60,7 @@ public class GattServer extends BluetoothGattServerCallback
     private final BlockingQueue<GattData> mOperationQueue = new LinkedBlockingQueue<GattData>(32);
     private boolean mIsIdle = true;
 
-    private CharacteristicHandler mHandler;
+    private CharacteristicHandler mCharHandler;
     private GattData mCharReadResponse;
     private ConnectionUpdaterIFace mConnUpdater;
 
@@ -98,7 +100,7 @@ public class GattServer extends BluetoothGattServerCallback
      */
     public boolean setCharacteristicHandler(CharacteristicHandler func) {
         if (null != func) {
-            mHandler = func;
+            mCharHandler = func;
             return true;
         }
         else {
@@ -219,7 +221,7 @@ public class GattServer extends BluetoothGattServerCallback
         AdvertiseData data = new AdvertiseData.Builder()
                 .setIncludeDeviceName(false)
                 .setIncludeTxPowerLevel(false)
-                .addServiceUuid(new ParcelUuid(BenchmarkServiceServer.BENCHMARK_SERVICE))
+                .addServiceUuid(new ParcelUuid(BenchmarkService.BENCHMARK_SERVICE))
                 .build();
 
         mBluetoothLeAdvertiser
@@ -318,6 +320,10 @@ public class GattServer extends BluetoothGattServerCallback
         boolean res = mBluetoothGattServer.notifyCharacteristicChanged(mConnectedDevices.get(data.mAddress),
                                                                         characteristic,
                                                                         false);
+        long timeDiff = SystemClock.elapsedRealtimeNanos() - opInit;
+        mCharHandler.handleCharacteristic (new GattData(data.mAddress,
+                                            characteristic.getUuid(),
+                                            ByteBuffer.allocate(Long.BYTES).putLong(timeDiff).array()));
     }
 
 
@@ -371,10 +377,10 @@ public class GattServer extends BluetoothGattServerCallback
 
         //We don't need to do anything but acknowledge since we aren't setting any chars
 //        Log.i(TAG, "Received: " + String.valueOf(value));
-//        Log.i(TAG, "handler is null? " + (null == mHandler));
+//        Log.i(TAG, "handler is null? " + (null == mCharHandler));
 
         //callback to hand data up
-        mHandler.handleCharacteristic(new GattData (device.getAddress(), characteristic.getUuid(), value));
+        mCharHandler.handleCharacteristic(new GattData (device.getAddress(), characteristic.getUuid(), value));
 
         if (responseNeeded) {
             //Presumably the client's onCharacteristicWrite only gets called on receipt of
@@ -408,7 +414,7 @@ public class GattServer extends BluetoothGattServerCallback
         if (0 == offset) {
             mCharReadResponse = null;
             //hand off to profile layer to ready the characteristic
-            mCharReadResponse = mHandler.handleCharacteristic(new GattData
+            mCharReadResponse = mCharHandler.handleCharacteristic(new GattData
                     (device.getAddress(), characteristic.getUuid(), null));
 
             characteristic.setValue(mCharReadResponse.mBuffer);

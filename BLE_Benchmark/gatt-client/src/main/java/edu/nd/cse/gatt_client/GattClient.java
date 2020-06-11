@@ -617,4 +617,18 @@ public class GattClient extends BluetoothGattCallback
             mConnUpdater.commMethodUpdate(gatt.getDevice().getAddress(), -1);
         }
     }
+
+    /**
+     * Receive a notification and pass up to next layer to handle
+     * @param gatt - the gatt instance for the connected device
+     * @param characteristic  - the characteristic upon which the notify was
+     *                    carried out
+     */
+    @Override
+    public void onCharacteristicChanged (BluetoothGatt gatt,
+                                         BluetoothGattCharacteristic characteristic) {
+        mCharHandler.handleCharacteristic(new GattData(gatt.getDevice().getAddress(),
+                characteristic.getUuid(),
+                characteristic.getValue()));
+    }
 }
