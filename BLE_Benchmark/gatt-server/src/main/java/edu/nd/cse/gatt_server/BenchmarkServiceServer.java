@@ -52,8 +52,8 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
      */
     public BenchmarkServiceServer(Context context,
                                   BenchmarkServiceServerCallback cb,
-                                  int maxConnections){
-        super(BenchmarkService.SERVER, maxConnections);
+                                  int requiredConnections){
+        super(BenchmarkService.SERVER, requiredConnections);
 
         mCB = cb;
 
