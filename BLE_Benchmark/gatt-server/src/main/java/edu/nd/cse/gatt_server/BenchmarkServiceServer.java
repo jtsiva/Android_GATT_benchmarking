@@ -51,8 +51,9 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
      * @param cb - callback for communicating with upper layers
      */
     public BenchmarkServiceServer(Context context,
-                                  BenchmarkServiceServerCallback cb){
-        super(BenchmarkService.SERVER);
+                                  BenchmarkServiceServerCallback cb,
+                                  int maxConnections){
+        super(BenchmarkService.SERVER, maxConnections);
 
         mCB = cb;
 
@@ -61,6 +62,10 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
         mGattServer.setConnectionUpdateCallback(this);
 
     }
+
+    /***************************************************************************************
+     * ConnectionUpdaterIFace methods
+     **************************************************************************************/
 
     @Override
     public void commMethodUpdate(String address, int commMethod) {mCommMethod = commMethod; }
@@ -179,6 +184,8 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
 
             //the first thing we'll receive on this char is the benchmark duration
             if (0 == mBenchmarkDuration) {
+                //TODO: separate benchmark durations by client (using a map?)
+                //TODO: kick off only if num connections ready reaches max connections
                 mBenchmarkDuration = getLong (data);
 
                 mBenchmarkHandler.post(this);

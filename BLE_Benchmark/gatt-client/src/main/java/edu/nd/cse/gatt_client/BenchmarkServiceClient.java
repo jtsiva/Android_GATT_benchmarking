@@ -42,6 +42,8 @@ import java.nio.ByteBuffer;
 public class BenchmarkServiceClient extends BenchmarkServiceBase implements CharacteristicHandler{
     private static final String TAG = BenchmarkServiceClient.class.getSimpleName();
 
+    private static final int MAX_SERVERS = 1;
+
     private GattClient mGattClient;
     private BenchmarkServiceClientCallback mCB;
     private final int SERVER = 0; //assuming only a single connection
@@ -57,7 +59,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
      * @param cb - callback defined by the application to handle interactions
      */
     public BenchmarkServiceClient(Context context, BenchmarkServiceClientCallback cb) {
-        super(BenchmarkService.CLIENT);
+        super(BenchmarkService.CLIENT, MAX_SERVERS);
         mGattClient = new GattClient(context, BenchmarkService.BENCHMARK_SERVICE,
                                         this, this);
         mCB = cb;

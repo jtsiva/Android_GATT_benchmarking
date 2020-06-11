@@ -23,6 +23,7 @@ import edu.nd.cse.benchmarkcommon.BluetoothRestarter;
 public class BenchmarkServer extends Activity{
 
     private static final String TAG = BenchmarkServer.class.getSimpleName();
+    private final int DEFAULT_MAX_CONNECTIONS = 1;
 
     private BluetoothRestarter mBTRestarter = new BluetoothRestarter(this);
 
@@ -132,6 +133,12 @@ public class BenchmarkServer extends Activity{
      * Start the server and prepare to run the benchmark
      */
     public void runBenchmark () {
+        Bundle receiveBundle = this.getIntent().getExtras();
+        if (null == receiveBundle) {
+            receiveBundle = new Bundle();
+        }
+        final int maxConnections = receiveBundle.getInt("maxConnections", DEFAULT_MAX_CONNECTIONS);
+
         mUpdates = (TextView) findViewById(R.id.updates);
         writeUpdate("Parameters:\n");
         //Here we would append a text version of all of the parameters
@@ -173,7 +180,7 @@ public class BenchmarkServer extends Activity{
                 writeUpdate("Error " + code + ": " + details);
 
             }
-        });
+        }, maxConnections);
 
         Log.i(TAG, "Starting benchmark server...");
         mBenchmarkServer.start();

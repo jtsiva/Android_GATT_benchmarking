@@ -17,6 +17,7 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
     private static final String TAG = BenchmarkServiceBase.class.getSimpleName();
 
     protected int mRole = 0;
+    protected int mMaxConnections = 1;
     protected List<String> mConnections = new ArrayList<String>();
     protected BenchmarkServiceCallback mCB = null;
 
@@ -44,6 +45,8 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
     protected long mBytesReceived = 0;
     protected long mPacketsReceived = 0;
 
+    protected int mConnectionsReady = 0;
+
     protected boolean mBenchmarkStarted = false;
     protected Handler mBenchmarkHandler = new Handler();
     protected boolean mRun;
@@ -59,9 +62,9 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
     protected int mCommMethod = BenchmarkService.WRITE_REQ;
     protected boolean mCommMethodState;
 
-    public BenchmarkServiceBase (int role){
+    public BenchmarkServiceBase (int role, int maxConnections){
         mRole = role;
-
+        mMaxConnections = maxConnections;
     }
 
 
