@@ -11,34 +11,34 @@ import BenchmarkService;
 
 public class BenchmarkServiceBase extends BenchmarkService {
 
-    private int mRole = 0;
+    protected int mRole = 0;
 
     /* Time recording variables */
-    private final int MAX_RECORDS = 16000;
-    private final int SENDER_LATENCY = 0;
-    private final int RECEIVER_LATENCY = 1;
-    private final int OP_LATENCY = 2;
-    private final int TIMING_TYPES = 3;
+    protected final int MAX_RECORDS = 16000;
+    protected final int SENDER_LATENCY = 0;
+    protected final int RECEIVER_LATENCY = 1;
+    protected final int OP_LATENCY = 2;
+    protected final int TIMING_TYPES = 3;
 
-    private long [][] mLatency = new long[TIMING_TYPES][MAX_RECORDS];
-    private int [] mLatencyIndex = new int [TIMING_TYPES];
-    private int [] mStartTS = new int [TIMING_TYPES]; //timestamp from when we're told to start timing
+    protected long [][] mLatency = new long[TIMING_TYPES][MAX_RECORDS];
+    protected int [] mLatencyIndex = new int [TIMING_TYPES];
+    protected int [] mStartTS = new int [TIMING_TYPES]; //timestamp from when we're told to start timing
 
-    private long mStartScanning = 0;
-    private long mLatencyStartup = 0;
+    protected long mStartScanning = 0;
+    protected long mLatencyStartup = 0;
 
 
     /* Benchmark-related variables*/
-    private long mBenchmarkStart = 0; //nanoseconds
-    private long mBenchmarkDuration = 0;
-    private boolean mBenchmarkDurationIsTime;
-    private long mBenchmarkBytesSent = 0;
-    private long mBytesReceived = 0;
-    private long mPacketsReceived = 0;
+    protected long mBenchmarkStart = 0; //nanoseconds
+    protected long mBenchmarkDuration = 0;
+    protected boolean mBenchmarkDurationIsTime;
+    protected long mBenchmarkBytesSent = 0;
+    protected long mBytesReceived = 0;
+    protected long mPacketsReceived = 0;
 
-    private boolean mBenchmarkStarted = false;
-    private Handler mBenchmarkHandler = new Handler();
-    private boolean mRun;
+    protected boolean mBenchmarkStarted = false;
+    protected Handler mBenchmarkHandler = new Handler();
+    protected boolean mRun;
 
 
     /* performance parameters */
@@ -74,7 +74,7 @@ public class BenchmarkServiceBase extends BenchmarkService {
      * to be sent *could* be encoded or compressed, it is imperative to not
      * just test using alpha-numeric characters.
      */
-    private Runnable goTest = new Runnable () {
+    protected Runnable goTest = new Runnable () {
         @Override
         public void run() {
             int packetSize = mDataSize;
@@ -88,7 +88,7 @@ public class BenchmarkServiceBase extends BenchmarkService {
             GattData data = new GattData(mServerAddress, BenchmarkService.TEST_CHAR, b);
             mBenchmarkBytesSent += packetSize;
 
-            handleTestCharSend(data);
+            this.handleTestCharSend(data);
 
 
             long now = SystemClock.elapsedRealtimeNanos ();
@@ -172,8 +172,8 @@ public class BenchmarkServiceBase extends BenchmarkService {
 
     /**
      *
-     * @param data
-     * @return
+     * @param data - data to be sent
+     * @return response object (
      */
     protected GattData handleTestCharSend(GattData data){
         //Now either one of the following
@@ -185,6 +185,8 @@ public class BenchmarkServiceBase extends BenchmarkService {
         } else {
             recordTimeDiff(SENDER_LATENCY);
         }
+
+        return null;
     }
 
     /**

@@ -45,33 +45,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
 
 
     private Handler mPrepHandler = new Handler();
-    private Handler mBenchmarkHandler = new Handler();
-
-    private boolean mRun;
-
-    /* Benchmark-related variables*/
-    private long mBenchmarkStart = 0; //nanoseconds
-    private long mBenchmarkDuration = 0;
-    private boolean mBenchmarkDurationIsTime;
-    private long mBenchmarkBytesSent = 0;
-
-    private long mStartScanning = 0;
-    private long mLatencyStartup = 0;
-    private long mOpLatency[] = new long[16000];
-    private long mServerLatency[] = new long[16000];
-    private int mLatencyIndex = 0;
-    private int mServerLatencyIndex = 0;
-
-
-    /* performance parameters */
-    private int mMtu = 20;
-    private boolean mMtuState;
-    private int mConnInterval = 0; //balanced
-    private boolean mConnIntervalState;
-    private int mDataSize = 20;
-    private boolean mDataSizeState;
-    private int mCommMethod = BenchmarkService.WRITE_REQ;
-    private boolean mCommMethodState;
+    
 
 
     /**
@@ -163,13 +137,15 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
 
                 //kick off benchmark
                 if (mCommMethod == BenchmarkService.NOTIFY) {
+                    //to start the server-side sending using notify, we send the duration
+                    //of the benchmark in bytes
                     mGattClient.handleCharacteristic(
                             new GattData(mServerAddress,
                             BenchmarkService.TEST_CHAR,
                             ByteBuffer.allocate(Long.BYTES).putLong(mBenchmarkDuration).array()));
                 } else {
                     mCB.onBenchmarkStart();
-                    mBenchmarkHandler.post(goTest);
+                    mBenchmarkHandler.post(this.goTest);
                 }
 
                 mBenchmarkStart = SystemClock.elapsedRealtimeNanos ();
@@ -183,56 +159,17 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
     };
 
     /**
-     * Create some random bytes and pass them off to the Gatt layer directed
-     * at the test device. Schedule to do this again after conn interval ms if
-     * this will not exceed the benchmark duration. Call onBenchmarkComplete
-     * when done.
-     *
-     * Data to be sent is a pseudo-random collection of bits as suggested by
-     * RFC4814 (https://tools.ietf.org/html/rfc4814#section-3). Since the data
-     * to be sent *could* be encoded or compressed, it is imperative to not
-     * just test using alpha-numeric characters.
+     * Send the data using the GattClient
+     * @param data - the data to send
+     * @return a response object (null for our use case)
      */
-    private Runnable goTest = new Runnable () {
-        @Override
-        public void run() {
-            int packetSize = mDataSize;
-            if (!mBenchmarkDurationIsTime &&
-                    packetSize + mBenchmarkBytesSent > mBenchmarkDuration){
+    @Override
+    protected GattData handleTestCharSend (GattData data) {
+        super(data);
+        mGattClient.handleCharacteristic(data);
+        return null;
+    }
 
-                packetSize = Math.toIntExact(mBenchmarkDuration - mBenchmarkBytesSent);
-            }
-            byte [] b = new byte[packetSize];
-            new Random().nextBytes(b);
-            GattData data = new GattData(mServerAddress, BenchmarkService.TEST_CHAR, b);
-            mBenchmarkBytesSent += packetSize;
-
-            mGattClient.handleCharacteristic(data);
-
-            long now = SystemClock.elapsedRealtimeNanos ();
-
-            if (mBenchmarkDurationIsTime) {
-                // if one more interval will not exceed the duration then post delayed
-                if ((now - mBenchmarkStart) + (mConnInterval * 1000000) < mBenchmarkDuration
-                        && mRun) {
-                    mBenchmarkHandler.postDelayed(this, mConnInterval);
-                }
-                else {
-                    mCB.onBenchmarkComplete();
-                    mCB.onBytesSentAvailable(mBenchmarkBytesSent);
-                }
-            } else {
-                if (mBenchmarkBytesSent < mBenchmarkDuration) {
-                    mBenchmarkHandler.postDelayed(this, mConnInterval);
-                }
-                else {
-                    mCB.onBenchmarkComplete();
-                    mCB.onBytesSentAvailable(mBenchmarkBytesSent);
-                }
-            }
-
-        }
-    };
 
     /**
      * End the benchmark now. Benchmark should not be considered ended until
@@ -298,15 +235,15 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
             //Log.d(TAG, "measurement: " + measurement);
 
             if (-1 != measurement) {
-                mReceiverLatency[mServerLatencyIndex] = measurement;
-                ++mServerLatencyIndex;
-
-                receiverLatencyMeasurements();
+                recordTime(RECEIVER_LATENCY, measurement);
             } else {
-                long [] opLatency = new long [mLatencyIndex];
-                long [] receiverLatency = new long [mReceiverLatencyIndex];
-                System.arraycopy(mOpLatency, 0, opLatency, 0, opLatency.length);
-                System.arraycopy(mReceiverLatency, 0, receiverLatency, 0, receiverLatency.length);
+                //pass copies of the arrays up through the callback
+                //we don't want to pass our array references!
+
+                long [] opLatency = new long [mLatencyIndex[OP_LATENCY]];
+                long [] receiverLatency = new long [mLatencyIndex[RECEIVER_LATENCY]];
+                System.arraycopy(mLatency[OP_LATENCY], 0, opLatency, 0, opLatency.length);
+                System.arraycopy(mLatency[RECEIVER_LATENCY], 0, receiverLatency, 0, receiverLatency.length);
                 mCB.onLatencyMeasurementsAvailable(opLatency, receiverLatency);
             }
         }else if(BenchmarkService.TEST_CHAR.equals(data.mCharID)
@@ -316,8 +253,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
             //This makes it easy for the GATT layer to time different
             //things (according to the comm method for example) and let
             //the profile client manage the times
-            mOpLatency[mLatencyIndex] = this.getLong(data);
-            ++mLatencyIndex;
+            recordTime(OP_LATENCY, this.getLong(data));
 
             data.mBuffer = null;
         } else if(BenchmarkService.TEST_CHAR.equals(data.mCharID)
