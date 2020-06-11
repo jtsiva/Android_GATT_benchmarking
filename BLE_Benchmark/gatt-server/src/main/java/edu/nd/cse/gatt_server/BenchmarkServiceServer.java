@@ -182,19 +182,23 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
         //if we are using a notify then we are the sender
         if (mCommMethod == BenchmarkService.NOTIFY) {
 
-            //the first thing we'll receive on this char is the benchmark duration
-            if (0 == mBenchmarkDuration) {
-                //TODO: separate benchmark durations by client (using a map?)
-                //TODO: kick off only if num connections ready reaches max connections
-                mBenchmarkDuration = getLong (data);
-
-                mBenchmarkHandler.post(this);
+            if (mConnectionsReady < mRequiredConnections) {
+                //the first thing we'll receive on this char is the benchmark duration
+                //from each connected client. This indicates that the client is ready
+                ++mConnectionsReady;
             } else {
-                //later calls to this function are operation latency measurements
-                recordTime(OP_LATENCY, data.mAddress, this.getLong(data));
+                //Now all the connections are ready
+                if (0 == mBenchmarkDuration) {
+                    //Actually set the duration and start the benchmark test
+                    mBenchmarkDuration = getLong(data);
+                    mBenchmarkHandler.post(this);
+                } else {
+                    //later calls to this function are operation latency measurements
+                    recordTime(OP_LATENCY, data.mAddress, this.getLong(data));
 
-                data.mBuffer = null;
-                response = data;
+                    data.mBuffer = null;
+                    response = data;
+                }
             }
 
         } else {

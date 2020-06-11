@@ -137,7 +137,7 @@ public class BenchmarkServer extends Activity{
         if (null == receiveBundle) {
             receiveBundle = new Bundle();
         }
- 
+
         final int requiredConnections = receiveBundle.getInt("requiredConnections", DEFAULT_REQ_CONNECTIONS);
 
         mUpdates = (TextView) findViewById(R.id.updates);

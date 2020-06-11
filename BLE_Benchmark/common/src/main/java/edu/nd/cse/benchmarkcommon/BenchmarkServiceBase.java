@@ -53,6 +53,7 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
 
 
     /* performance parameters */
+    //TODO: later change these to maps so that different connections can have different params
     protected int mMtu = 20;
     protected boolean mMtuState;
     protected int mConnInterval = 0; //balanced
@@ -288,6 +289,7 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
             mConnections.add(address);
         } else {
             mConnections.remove(address);
+            --mConnectionsReady;
         }
     }
 
