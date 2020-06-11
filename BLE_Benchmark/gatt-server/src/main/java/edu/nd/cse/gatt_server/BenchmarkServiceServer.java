@@ -1,5 +1,6 @@
 package edu.nd.cse.gatt_server;
 
+import edu.nd.cse.benchmarkcommon.BenchmarkService;
 import edu.nd.cse.benchmarkcommon.BenchmarkServiceBase;
 import edu.nd.cse.benchmarkcommon.Key;
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
@@ -13,6 +14,9 @@ import android.bluetooth.BluetoothGattService;
 import android.util.Log;
 import android.content.Context;
 import android.os.Build;
+import java.util.HashMap;
+import java.util.Map;
+import java.nio.ByteBuffer;
 
 
 /**
@@ -37,7 +41,7 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
     private GattServer mGattServer;
     private BenchmarkServiceServerCallback mCB;
 
-    private Map<String, int> mSentMeasurements = new HashMap<String, int>();
+    private Map<String, Integer> mSentMeasurements = new HashMap<String, Integer>();
 
 
     /**
@@ -59,21 +63,21 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
     }
 
     @Override
-    public void commMethodUpdate(int commMethod) {mCommMethod = commMethod; }
+    public void commMethodUpdate(String address, int commMethod) {mCommMethod = commMethod; }
 
     @Override
-    public void mtuUpdate(int mtu) {
+    public void mtuUpdate(String address,int mtu) {
         mMtu = mtu;
     }
 
     @Override
-    public void connIntervalUpdate (int interval){
+    public void connIntervalUpdate (String address,int interval){
         mConnInterval = interval;
     }
 
     @Override
     public void connectionUpdate (String address, int state){
-        super(address, state);
+        super.connectionUpdate(address, state);
 
         if (0 == state) {
             if (mConnections.isEmpty()){
@@ -171,16 +175,16 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
         GattData response = null;
 
         //if we are using a notify then we are the sender
-        if (mCommMethod == BenchmarkService.NOTIFY)) {
+        if (mCommMethod == BenchmarkService.NOTIFY) {
 
             //the first thing we'll receive on this char is the benchmark duration
             if (0 == mBenchmarkDuration) {
                 mBenchmarkDuration = getLong (data);
 
-                mBenchmarkHandler.post(this.goTest);
+                mBenchmarkHandler.post(this);
             } else {
                 //later calls to this function are operation latency measurements
-                recordTime(OP_LATENCY, data.address, this.getLong(data));
+                recordTime(OP_LATENCY, data.mAddress, this.getLong(data));
 
                 data.mBuffer = null;
                 response = data;
@@ -228,19 +232,19 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
         long returnVal = -1;
         int index = 0;
 
-        if (mCommMethod == BenchmarkService.NOTIFY)) {
+        if (mCommMethod == BenchmarkService.NOTIFY) {
             index = mLatencyIndex.get(new Key(OP_LATENCY, data.mAddress));
         } else {
             index = mLatencyIndex.get(new Key(RECEIVER_LATENCY, data.mAddress));
         }
 
-        if (null == mSentMeasurements.get(mAddress)) {
-            mSentMeasurements.put(mAddress, 0);
+        if (null == mSentMeasurements.get(data.mAddress)) {
+            mSentMeasurements.put(data.mAddress, 0);
         }
 
-        if (mSentMeasurements.get(mAddress) < index) {
-            returnVal = mLatency.get(new Key(OP_LATENCY, data.mAddress)[mSentMeasurements.get(mAddress)];
-            mSentMeasurements.put(mAddress, mSentMeasurements.get(mAddress) + 1);
+        if (mSentMeasurements.get(data.mAddress) < index) {
+            returnVal = mLatency.get(new Key(OP_LATENCY, data.mAddress)).get(mSentMeasurements.get(data.mAddress));
+            mSentMeasurements.put(data.mAddress, mSentMeasurements.get(data.mAddress) + 1);
         } else {
             mCB.onBenchmarkComplete();
         }

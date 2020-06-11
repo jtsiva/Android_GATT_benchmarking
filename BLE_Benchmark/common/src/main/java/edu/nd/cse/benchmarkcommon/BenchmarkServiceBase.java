@@ -11,12 +11,14 @@ import java.util.Random;
 import java.util.List;
 import java.util.ArrayList;
 
+
 public class BenchmarkServiceBase extends BenchmarkService implements Runnable, ConnectionUpdaterIFace {
 
     private static final String TAG = BenchmarkServiceBase.class.getSimpleName();
 
     protected int mRole = 0;
     protected List<String> mConnections = new ArrayList<String>();
+    protected BenchmarkServiceCallback mCB = null;
 
     /* Time recording variables */
     protected final int MAX_RECORDS = 16000;
@@ -48,16 +50,16 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
 
 
     /* performance parameters */
-    private int mMtu = 20;
-    private boolean mMtuState;
-    private int mConnInterval = 0; //balanced
-    private boolean mConnIntervalState;
-    private int mDataSize = 20;
-    private boolean mDataSizeState;
-    private int mCommMethod = BenchmarkService.WRITE_REQ;
-    private boolean mCommMethodState;
+    protected int mMtu = 20;
+    protected boolean mMtuState;
+    protected int mConnInterval = 0; //balanced
+    protected boolean mConnIntervalState;
+    protected int mDataSize = 20;
+    protected boolean mDataSizeState;
+    protected int mCommMethod = BenchmarkService.WRITE_REQ;
+    protected boolean mCommMethodState;
 
-    public void BenchmarkServiceBase (int role){
+    public BenchmarkServiceBase (int role){
         mRole = role;
 
     }

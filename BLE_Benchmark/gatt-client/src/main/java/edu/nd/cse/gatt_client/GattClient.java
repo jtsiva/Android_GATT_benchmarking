@@ -57,7 +57,7 @@ public class GattClient extends BluetoothGattCallback
     private boolean mIsIdle = true;
     private UiUpdate mUiUpdate = null;
     private CharacteristicHandler mCharHandler = null;
-    private ConnectionUpdater mConnUpdater = null;
+    private ConnectionUpdaterIFace mConnUpdater = null;
 
     private int mCommMethod;
 
@@ -100,7 +100,7 @@ public class GattClient extends BluetoothGattCallback
      */
     public GattClient (Context context, UUID targetService,
                        CharacteristicHandler charHandler,
-                       ConnectionUpdater connUpdater) {
+                       ConnectionUpdaterIFace connUpdater) {
         this(context, targetService);
         mCharHandler = charHandler;
         mConnUpdater = connUpdater;

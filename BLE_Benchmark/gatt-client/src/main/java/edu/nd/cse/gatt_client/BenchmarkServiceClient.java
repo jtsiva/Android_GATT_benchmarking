@@ -1,5 +1,6 @@
 package edu.nd.cse.gatt_client;
 
+import edu.nd.cse.benchmarkcommon.BenchmarkService;
 import edu.nd.cse.benchmarkcommon.BenchmarkServiceBase;
 import edu.nd.cse.benchmarkcommon.Key;
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
@@ -12,7 +13,8 @@ import android.os.SystemClock;
 import android.util.Log;
 
 import java.nio.ByteBuffer;
-import java.util.Random;
+
+
 
 /**
  * This class implements the behavior of the client-side interactions
@@ -55,10 +57,11 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
      * @param cb - callback defined by the application to handle interactions
      */
     public BenchmarkServiceClient(Context context, BenchmarkServiceClientCallback cb) {
-        mGattClient = new GattClient(context, BenchmarkService.BENCHMARK_SERVICE,
-                                        this, mConnUpdater);
-        mCB = cb;
         super(BenchmarkService.CLIENT);
+        mGattClient = new GattClient(context, BenchmarkService.BENCHMARK_SERVICE,
+                                        this, this);
+        mCB = cb;
+
     }
 
 
@@ -166,7 +169,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
      */
     @Override
     protected GattData handleTestCharSend (GattData data) {
-        super(data);
+        super.handleTestCharSend(data);
         mGattClient.handleCharacteristic(data);
         return null;
     }
@@ -235,8 +238,19 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
 
                 //pass copies of the arrays up through the callback
                 //we don't want to pass our array references!
-                long [] opLatency = mLatency.get(new Key(OP_LATENCY, data.mAddress)).toArray();
-                long [] receiverLatency = mLatency.get(new Key(RECEIVER_LATENCY, data.mAddress)).toArray();
+                final long [] opLatency = new long [mLatency.get(new Key(OP_LATENCY, data.mAddress)).size()];
+                final long [] receiverLatency = new long [mLatency.get(new Key(RECEIVER_LATENCY, data.mAddress)).size()];
+                int index = 0;
+                for (final Long value : mLatency.get(new Key(OP_LATENCY, data.mAddress))) {
+                    opLatency[index++] = value;
+                }
+
+                index = 0;
+                for (final Long value : mLatency.get(new Key(RECEIVER_LATENCY, data.mAddress))) {
+                    receiverLatency[index++] = value;
+                }
+
+
                 mCB.onLatencyMeasurementsAvailable(opLatency, receiverLatency);
             }
         }else if(BenchmarkService.TEST_CHAR.equals(data.mCharID)
@@ -318,7 +332,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
 
     @Override
     public void connectionUpdate (String address, int state){
-        super(address, state);
+        super.connectionUpdate(address, state);
 
         if (1 == state){
             Log.d(TAG, "Connected");

@@ -336,10 +336,6 @@ public class BenchmarkClient extends Activity{
                 //nothing
             }
 
-            @Override
-            public void onThroughputAvailable (final float throughput){
-                writeUpdate("Throughput: " + throughput);
-            }
 
             @Override
             public void onLossRateAvailable (final float lossRate){
@@ -356,7 +352,7 @@ public class BenchmarkClient extends Activity{
                                                         final long [] serverMeasurements) {
                 writeUpdate(clientMeasurements.length + " client measurements available");
                 writeUpdate(serverMeasurements.length + " server measurements available");
-                mBenchmarkClient.requestThroughput();
+
                 writeUpdate("Writing results to file...");
                 writeStartupLatencyToFile (Build.DISPLAY, mServerID, mtu, getCommMethodString(commMethod), connInterval, mStartupLatency);
                 writePayloadLatencyToFile(Build.DISPLAY, mServerID, mtu, getCommMethodString(commMethod), connInterval, serverMeasurements[serverMeasurements.length - 1]);

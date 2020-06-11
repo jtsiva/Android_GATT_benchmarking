@@ -164,6 +164,11 @@ public class BenchmarkServer extends Activity{
             }
 
             @Override
+            public void onBytesSentAvailable (long bytesSent) {
+                writeUpdate("Bytes sent: " + bytesSent);
+            }
+
+            @Override
             public void onBenchmarkError (final int code, final String details) {
                 writeUpdate("Error " + code + ": " + details);
 

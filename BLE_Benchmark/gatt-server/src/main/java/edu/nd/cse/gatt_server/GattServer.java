@@ -2,7 +2,7 @@ package edu.nd.cse.gatt_server;
 
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
 import edu.nd.cse.benchmarkcommon.GattData;
-import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
+import edu.nd.cse.benchmarkcommon.ConnectionUpdaterIFace;
 
 /* BLE imports */
 import android.bluetooth.BluetoothAdapter;
@@ -60,7 +60,7 @@ public class GattServer extends BluetoothGattServerCallback
 
     private CharacteristicHandler mHandler;
     private GattData mCharReadResponse;
-    private ConnectionUpdater mConnUpdater;
+    private ConnectionUpdaterIFace mConnUpdater;
 
     public boolean mHasBTSupport = true;
 
@@ -148,7 +148,7 @@ public class GattServer extends BluetoothGattServerCallback
      * parameter changes up the stack
      * @param updater - the callback
      */
-    public void setConnectionUpdateCallback(ConnectionUpdater updater) {
+    public void setConnectionUpdateCallback(ConnectionUpdaterIFace updater) {
         mConnUpdater = updater;
     }
 
