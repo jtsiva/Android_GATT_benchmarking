@@ -30,23 +30,10 @@ import java.nio.ByteBuffer;
 *   - boolean on start function to indicate whether or not to continue
 *     advertising after a connection has been made
 * */
-public class BenchmarkServiceServer extends BenchmarkService
+public class BenchmarkServiceServer extends BenchmarkServiceBase
                                     implements CharacteristicHandler {
     private static final String TAG = BenchmarkServiceServer.class.getSimpleName();
 
-    private long [] mTimeDiffs; //array to hold the delta between packet ends
-    private long mStartTS = 0; //timestamp from when we're told to start timing
-    private int mDiffsIndex = 0;
-    private int mSentDiffsIndex = 0;
-    private final int MAX_DIFFS = 16000;
-    private long mBytesReceived = 0;
-    private long mPacketsReceived = 0;
-    private int mMtu = 0;
-    private int mConnInterval = 0;
-    private int mCommMethod = 0;
-
-    private long mBenchmarkDuration = 0;
-    private long mBenchmarkBytesSent = 0;
 
     private GattServer mGattServer;
     private BenchmarkServiceServerCallback mCB;
@@ -56,7 +43,7 @@ public class BenchmarkServiceServer extends BenchmarkService
 
     private boolean mRun;
 
-    private string mTargetDev;
+
 
 
     /**
@@ -68,9 +55,9 @@ public class BenchmarkServiceServer extends BenchmarkService
      */
     public BenchmarkServiceServer(Context context,
                                   BenchmarkServiceServerCallback cb){
-        mCB = cb;
+        super(BenchmarkService.CLIENT);
 
-        mTimeDiffs = new long[MAX_DIFFS];
+        mCB = cb;
 
         mGattServer = new GattServer (context, createBenchmarkService());
         mGattServer.setCharacteristicHandler(this);

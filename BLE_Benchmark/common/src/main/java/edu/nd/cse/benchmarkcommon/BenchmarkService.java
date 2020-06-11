@@ -84,6 +84,11 @@ public class BenchmarkService {
     public static final String LOW_LATENCY = "low_latency";
     public static final String LOW_POWER = "low_power";
 
+    //constants for indicating role
+    public static final int CLIENT = 0;
+    public static final int SERVER = 1;
+    public static final int BRIDGE = 2;
+
 
 
 }

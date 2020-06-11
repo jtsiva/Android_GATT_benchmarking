@@ -36,7 +36,7 @@ import java.util.Random;
  * interaction with the profile is asynchronous--fitting with how the
  * GATT communication works and how UI interactions work
  */
-public class BenchmarkServiceClient extends BenchmarkService implements CharacteristicHandler{
+public class BenchmarkServiceClient extends BenchmarkServiceBase implements CharacteristicHandler{
     private static final String TAG = BenchmarkServiceClient.class.getSimpleName();
 
     private GattClient mGattClient;
@@ -83,6 +83,7 @@ public class BenchmarkServiceClient extends BenchmarkService implements Characte
         mGattClient = new GattClient(context, BenchmarkService.BENCHMARK_SERVICE,
                                         this, mConnUpdater);
         mCB = cb;
+        super(BenchmarkService.CLIENT);
     }
 
 
@@ -159,7 +160,7 @@ public class BenchmarkServiceClient extends BenchmarkService implements Characte
            // Log.d(TAG, "mtustate: " +  mMtuState + " connIntervalState: " + mConnIntervalState + " dataSizeState: " +  mDataSizeState);
             if (mMtuState && mConnIntervalState && mDataSizeState && mCommMethodState) {
                 Log.d(TAG, "Ready to start benchmark");
-                mCB.onBenchmarkStart();
+
                 //kick off benchmark
                 if (mCommMethod == BenchmarkService.NOTIFY) {
                     mGattClient.handleCharacteristic(
@@ -167,6 +168,7 @@ public class BenchmarkServiceClient extends BenchmarkService implements Characte
                             BenchmarkService.TEST_CHAR,
                             ByteBuffer.allocate(Long.BYTES).putLong(mBenchmarkDuration).array()));
                 } else {
+                    mCB.onBenchmarkStart();
                     mBenchmarkHandler.post(goTest);
                 }
 

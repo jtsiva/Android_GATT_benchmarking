@@ -11,13 +11,21 @@ import BenchmarkService;
 
 public class BenchmarkServiceBase extends BenchmarkService {
 
-    private long mStartTS = 0; //timestamp from when we're told to start timing
+    private int mRole = 0;
 
-    private boolean mBenchmarkStarted = false;
+    /* Time recording variables */
+    private final int MAX_RECORDS = 16000;
+    private final int SENDER_LATENCY = 0;
+    private final int RECEIVER_LATENCY = 1;
+    private final int OP_LATENCY = 2;
+    private final int TIMING_TYPES = 3;
 
-    private Handler mBenchmarkHandler = new Handler();
+    private long [][] mLatency = new long[TIMING_TYPES][MAX_RECORDS];
+    private int [] mLatencyIndex = new int [TIMING_TYPES];
+    private int [] mStartTS = new int [TIMING_TYPES]; //timestamp from when we're told to start timing
 
-    private boolean mRun;
+    private long mStartScanning = 0;
+    private long mLatencyStartup = 0;
 
 
     /* Benchmark-related variables*/
@@ -28,12 +36,9 @@ public class BenchmarkServiceBase extends BenchmarkService {
     private long mBytesReceived = 0;
     private long mPacketsReceived = 0;
 
-    private long mStartScanning = 0;
-    private long mLatencyStartup = 0;
-    private long mSenderLatency[] = new long[16000]; //TODO: clear up time records since we need 2 at most
-    private long mReceiverLatency[] = new long[16000];
-    private int mLatencyIndex = 0;
-    private int mReceiverLatencyIndex = 0;
+    private boolean mBenchmarkStarted = false;
+    private Handler mBenchmarkHandler = new Handler();
+    private boolean mRun;
 
 
     /* performance parameters */
@@ -45,6 +50,17 @@ public class BenchmarkServiceBase extends BenchmarkService {
     private boolean mDataSizeState;
     private int mCommMethod = BenchmarkService.WRITE_REQ;
     private boolean mCommMethodState;
+
+    public void BenchmarkServiceBase (int role){
+        mRole = role;
+
+        //initialize for use later
+        for (int i = 0; i < TIMING_TYPES; i++){
+            mLatencyIndex[i] = 0;
+            mStartTS[i] = 0;
+        }
+
+    }
 
 
     /**
@@ -100,7 +116,11 @@ public class BenchmarkServiceBase extends BenchmarkService {
         }
     };
 
-
+    /**
+     *
+     * @param data
+     * @return
+     */
     protected long getLong (GattData data) {
         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
         buffer.put(data.mBuffer);
@@ -120,6 +140,12 @@ public class BenchmarkServiceBase extends BenchmarkService {
     protected GattData handleTestCharReceive(GattData data) {
         GattData response = null;
 
+        if (BenchmarkService.CLIENT == mRole && BenchmarkService.NOTIFY != mCommMethod){
+            recordTime(OP_LATENCY, this.getLong(data));
+        } else if (BenchmarkService.SERVER == mRole && BenchmarkService.NOTIFY == mCommMethod) {
+            if ()
+        }
+
         if (!mBenchmarkStarted) {
             mCB.onBenchmarkStart();
             mBenchmarkStarted = true;
@@ -128,10 +154,10 @@ public class BenchmarkServiceBase extends BenchmarkService {
         if (null != data && null != data.mBuffer) {
             mBytesReceived += data.mBuffer.length;
             mPacketsReceived += 1;
-            if (!timerStarted()) {
-                startTiming();
+            if (!timerStarted(RECEIVER_LATENCY)) {
+                startTiming(RECEIVER_LATENCY);
             } else {
-                recordTimeDiff();
+                recordTimeDiff(RECEIVER_LATENCY);
             }
 
             response = data;
@@ -144,50 +170,84 @@ public class BenchmarkServiceBase extends BenchmarkService {
         return response;
     }
 
+    /**
+     *
+     * @param data
+     * @return
+     */
     protected GattData handleTestCharSend(GattData data){
         //Now either one of the following
         //mGattClient.handleCharacteristic(data);
         //mGattServer.handleCharacteristic(data);
 
-        //record time stamp?
+        if (!timerStarted(SENDER_LATENCY)) {
+            startTiming(SENDER_LATENCY);
+        } else {
+            recordTimeDiff(SENDER_LATENCY);
+        }
     }
 
     /**
      * Grab the time stamp so that we can track the duration of an event
      *
-     * TODO: expand to allow timing multiple events
+     * @param timeType - int to distinguish different timing events
      */
-    private void startTiming() {
-        mStartTS = SystemClock.elapsedRealtimeNanos();
+    protected void startTiming(int timeType) {
+        mStartTS[timeType] = SystemClock.elapsedRealtimeNanos();
     }
 
     /**
+     * Convenience function to determing whether timer has been started
      *
+     * @param timeType - int to distinguish different timing events
      * @return true if the timer has been started, false otherwise
      */
-    private boolean timerStarted() { return !(0 == mStartTS); }
+    protected boolean timerStarted(int timeType) { return !(0 == mStartTS[timeType]); }
 
     /**
      * Record the time difference from when startTiming() was called. If we
      * have filled the array then write the array to a file (if the file has
      * been set).
+     *
+     * @param timeType - int to distinguish different timing events
      */
-    private void recordTimeDiff() {
+    protected void recordTimeDiff(int timeType) {
         long ts = SystemClock.elapsedRealtimeNanos();
         long diff = 0;
 
-        if (0 == mStartTS) {
+        if (0 == mStartTS[timeType]) {
             Log.w (TAG, "Tried to record time stamp when timing not started");
 
         } else {
             diff = ts - mStartTS;
 
-            mReceiverLatency[mReceiverLatencyIndex] = diff;
+            mLatency[timeType][mLatencyIndex[timeType]] = diff;
             //Log.d(TAG, "recording time difff: " +  mTimeDiffs[mDiffsIndex]);
-            ++mReceiverLatencyIndexd;
+            ++mLatencyIndex[timeType];
 
         }
 
+    }
+
+    /**
+     * Record the curren time to appropriate list
+     *
+     * @param timeType - int to distinguish different timing events
+     */
+    protected void recordTime(int timeType) {
+        mLatency[timeType][mLatencyIndex[timeType]] = SystemClock.elapsedRealtimeNanos();
+        ++mLatencyIndex[timeType];
+    }
+
+    /**
+     * Record the time provided to the appropriate array
+     *
+     * @param timeType - int to distinguish different timing events
+     * @param time - time to record
+     */
+    protected void recordTime(int timeType, long time) {
+        mLatency[timeType][mLatencyIndex[timeType]] = time;
+        ++mLatencyIndex[timeType];
     }
 
 
