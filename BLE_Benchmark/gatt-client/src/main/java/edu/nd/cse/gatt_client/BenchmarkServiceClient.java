@@ -151,7 +151,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
                             ByteBuffer.allocate(Long.BYTES).putLong(mBenchmarkDuration).array()));
                 } else {
                     mCB.onBenchmarkStart();
-                    mBenchmarkHandler.post(this);
+                    mBenchmarkHandler.post(BenchmarkServiceClient.this);
                 }
 
                 mBenchmarkStart = SystemClock.elapsedRealtimeNanos ();
