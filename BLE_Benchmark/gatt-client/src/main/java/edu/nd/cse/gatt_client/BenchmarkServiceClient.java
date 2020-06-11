@@ -1,6 +1,7 @@
 package edu.nd.cse.gatt_client;
 
-import edu.nd.cse.benchmarkcommon.BenchmarkService;
+import edu.nd.cse.benchmarkcommon.BenchmarkServiceBase;
+import edu.nd.cse.benchmarkcommon.Key;
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
 import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
 import edu.nd.cse.benchmarkcommon.GattData;
@@ -45,7 +46,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
 
 
     private Handler mPrepHandler = new Handler();
-    
+
 
 
     /**
@@ -145,7 +146,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
                             ByteBuffer.allocate(Long.BYTES).putLong(mBenchmarkDuration).array()));
                 } else {
                     mCB.onBenchmarkStart();
-                    mBenchmarkHandler.post(this.goTest);
+                    mBenchmarkHandler.post(this);
                 }
 
                 mBenchmarkStart = SystemClock.elapsedRealtimeNanos ();
@@ -232,18 +233,22 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
     public GattData handleCharacteristic (GattData data) {
         if (BenchmarkService.LATENCY_CHAR.equals(data.mCharID)) {
             long measurement = getLong(data);
-            //Log.d(TAG, "measurement: " + measurement);
-
             if (-1 != measurement) {
-                recordTime(RECEIVER_LATENCY, measurement);
+                //if this is not the sentinal value
+                if (BenchmarkService.NOTIFY != mCommMethod) {
+                    //if we are not using notify then this latency is a receiver latency
+                    recordTime(RECEIVER_LATENCY, data.mAddress, measurement);
+                } else {
+                    //if we *are* using notify then this latency is the op latency
+                    recordTime(OP_LATENCY, data.mAddress, measurement);
+                }
             } else {
+                //we're done, so pass the completed data up to the next layer
+
                 //pass copies of the arrays up through the callback
                 //we don't want to pass our array references!
-
-                long [] opLatency = new long [mLatencyIndex[OP_LATENCY]];
-                long [] receiverLatency = new long [mLatencyIndex[RECEIVER_LATENCY]];
-                System.arraycopy(mLatency[OP_LATENCY], 0, opLatency, 0, opLatency.length);
-                System.arraycopy(mLatency[RECEIVER_LATENCY], 0, receiverLatency, 0, receiverLatency.length);
+                long [] opLatency = mLatency.get(new Key(OP_LATENCY, data.mAddress)).toArray();
+                long [] receiverLatency = mLatency.get(new Key(RECEIVER_LATENCY, data.mAddress)).toArray();
                 mCB.onLatencyMeasurementsAvailable(opLatency, receiverLatency);
             }
         }else if(BenchmarkService.TEST_CHAR.equals(data.mCharID)
@@ -253,7 +258,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
             //This makes it easy for the GATT layer to time different
             //things (according to the comm method for example) and let
             //the profile client manage the times
-            recordTime(OP_LATENCY, this.getLong(data));
+            recordTime(OP_LATENCY, data.mAddress, this.getLong(data));
 
             data.mBuffer = null;
         } else if(BenchmarkService.TEST_CHAR.equals(data.mCharID)

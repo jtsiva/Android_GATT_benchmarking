@@ -1,6 +1,7 @@
 package edu.nd.cse.gatt_server;
 
-import edu.nd.cse.benchmarkcommon.BenchmarkService;
+import edu.nd.cse.benchmarkcommon.BenchmarkServiceBase;
+import edu.nd.cse.benchmarkcommon.Key;
 import edu.nd.cse.benchmarkcommon.CharacteristicHandler;
 import edu.nd.cse.benchmarkcommon.GattData;
 import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
@@ -8,14 +9,11 @@ import edu.nd.cse.benchmarkcommon.ConnectionUpdater;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
-import android.os.Handler;
-import android.os.SystemClock;
+
 import android.util.Log;
 import android.content.Context;
 import android.os.Build;
 
-import java.util.Random;
-import java.nio.ByteBuffer;
 
 /**
 * Implementation of our benchmark profile server which will be used with
@@ -34,28 +32,24 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
                                     implements CharacteristicHandler {
     private static final String TAG = BenchmarkServiceServer.class.getSimpleName();
 
+    private final int MAX_CLIENTS = 6; //seems high enough....
 
     private GattServer mGattServer;
     private BenchmarkServiceServerCallback mCB;
-    private boolean mBenchmarkStarted = false;
+    private ArrayList<String> mClientList = new ArrayList<String>();
 
-    private Handler mBenchmarkHandler = new Handler();
-
-    private boolean mRun;
-
-
+    private int mSentMeasurements = 0;
 
 
     /**
      * Initialize the time diffs array and gatt server
      *
      * @param context - application context
-     * @param logToFile - whether to log the raw timestamps to a file
-     *                  or store them in a circular buffer in mem
+     * @param cb - callback for communicating with upper layers
      */
     public BenchmarkServiceServer(Context context,
                                   BenchmarkServiceServerCallback cb){
-        super(BenchmarkService.CLIENT);
+        super(BenchmarkService.SERVER);
 
         mCB = cb;
 
@@ -74,9 +68,13 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
 
             public void connectionUpdate (String address, int state){
                 if (0 == state) {
-                    mCB.onBenchmarkComplete();
+                    mClientList.remove(address);
+                    if (mClientList.isEmpty()){
+                        mCB.onBenchmarkComplete();
+                    }
+
                 } else {
-                    mTargetDev = address;
+                    mClientList.add(address);
                 }
             }
         });
@@ -132,45 +130,6 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
     }
 
     /**
-     * Create some random bytes and pass them off to the Gatt layer directed
-     * at the test device. Schedule to do this again after conn interval ms if
-     * this will not exceed the benchmark duration. Call onBenchmarkComplete
-     * when done.
-     *
-     * Data to be sent is a pseudo-random collection of bits as suggested by
-     * RFC4814 (https://tools.ietf.org/html/rfc4814#section-3). Since the data
-     * to be sent *could* be encoded or compressed, it is imperative to not
-     * just test using alpha-numeric characters.
-     */
-    private Runnable goTest = new Runnable () {
-        @Override
-        public void run() {
-            int packetSize = mMtu - 3;
-            if (packetSize + mBenchmarkBytesSent > mBenchmarkDuration){
-
-                packetSize = Math.toIntExact(mBenchmarkDuration - mBenchmarkBytesSent);
-            }
-            byte [] b = new byte[packetSize];
-            new Random().nextBytes(b);
-
-
-            GattData data = new GattData(mServerAddress, BenchmarkService.TEST_CHAR, b);
-            mBenchmarkBytesSent += packetSize;
-
-            mGattServer.handleCharacteristic(data);
-
-            long now = SystemClock.elapsedRealtimeNanos ();
-
-
-            if (mBenchmarkBytesSent < mBenchmarkDuration) {
-                mBenchmarkHandler.postDelayed(this, mConnInterval);
-            }
-
-        }
-    };
-
-
-    /**
      * Callback to be called by GATT layer to handle a characteristic. All the
      * parsing and interpretation of the data from the GATT layer occurs here.
      *
@@ -186,10 +145,10 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
             response = handleTestCharacteristic(data);
         }
         else if (BenchmarkService.RAW_DATA_CHAR.equals(data.mCharID)){
-            response = handleRawDataRequest();
+            response = handleRawDataRequest(data);
         }
         else if (BenchmarkService.LATENCY_CHAR.equals(data.mCharID)){
-            response = handleLatencyRequest();
+            response = handleLatencyRequest(data);
         }
         else if (BenchmarkService.ID_CHAR.equals(data.mCharID)){
             response = handleIDRequest();
@@ -209,13 +168,25 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
     private GattData handleTestCharacteristic (GattData data){
         GattData response = null;
 
+        //if we are using a notify then we are the sender
         if (mCommMethod == BenchmarkService.NOTIFY)) {
 
-            mBenchmarkDuration = getLong (data);
+            //the first thing we'll receive on this char is the benchmark duration
+            if (0 == mBenchmarkDuration) {
+                mBenchmarkDuration = getLong (data);
 
-            mBenchmarkHandler.post(goTest);
+                mBenchmarkHandler.post(this.goTest);
+            } else {
+                //later calls to this function are operation latency measurements
+                recordTime(OP_LATENCY, data.address, this.getLong(data));
+
+                data.mBuffer = null;
+                response = data;
+            }
+
         } else {
-            this.handleTestCharReceive(data);
+            //otherwise we are the receiver
+            response = this.handleTestCharReceive(data);
         }
 
         return response;
@@ -231,46 +202,14 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
      *
      * TODO: implement
      *
-     * @return barebones response with only buffer set
-     */
-    private GattData handleRawDataRequest () {
-        GattData response = null;
-
-        //get a new chunk of netstring to send and put in response.mBuffer
-
-        return response;
-    }
-
-    /**
-     * DEPRACATED
-     * Calculate the bits per second as of the last operation on the
-     * test characteristic
+     * @param data - information associated with request
      *
      * @return barebones response with only buffer set
      */
-    private GattData handleThroughputRequest () {
+    private GattData handleRawDataRequest (GattData data) {
         GattData response = null;
 
-        //if we have actually recorded time diffs
-        if (0 != mDiffsIndex){
-            int lastTimeIndex = mDiffsIndex - 1;
-            Log.d(TAG, "received " + mBytesReceived + " bytes");
-            Log.d(TAG, "elapsed time: " + mTimeDiffs[lastTimeIndex]);
-            long bps = (mBytesReceived * 8 * 1000000000) / mTimeDiffs[lastTimeIndex];
-            Log.d(TAG, "bps: " + bps);
-            if (0 > bps) {
-                bps = 0;
-            }
-            ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-            buffer.putLong(bps);
-
-            Log.d(TAG, "long as bytes: " + buffer.array());
-
-            response = new GattData(null, null, buffer.array());
-        } else {
-            response = new GattData (null, null, ByteBuffer.allocate(Long.BYTES).putLong(0).array());
-        }
-
+        //get a new chunk of netstring to send and put in response.mBuffer
 
         return response;
     }
@@ -280,14 +219,22 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
      * timestamps have been sent. When no more data is available, send
      * -1
      *
+     * @param data - information associated with request (like address)
      * @return barebones response with only buffer set
      */
-    private GattData handleLatencyRequest () {
+    private GattData handleLatencyRequest (GattData data) {
         long returnVal = -1;
+        int index = 0;
 
-        if (mSentDiffsIndex < mDiffsIndex) {
-            returnVal = mTimeDiffs[mSentDiffsIndex];
-            ++mSentDiffsIndex;
+        if (mCommMethod == BenchmarkService.NOTIFY)) {
+            index = mLatencyIndex.get(new Key(OP_LATENCY, data.mAddress));
+        } else {
+            index = mLatencyIndex.get(new Key(RECEIVER_LATENCY, data.mAddress));
+        }
+
+        if (mSentMeasurements < index) {
+            returnVal = mLatency.get(new Key(OP_LATENCY, data.mAddress)[mSentMeasurements];
+            ++mSentMeasurements;
         } else {
             mCB.onBenchmarkComplete();
         }
