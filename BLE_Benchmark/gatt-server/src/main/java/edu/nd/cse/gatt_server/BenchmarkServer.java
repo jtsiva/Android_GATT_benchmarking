@@ -137,6 +137,7 @@ public class BenchmarkServer extends Activity{
         if (null == receiveBundle) {
             receiveBundle = new Bundle();
         }
+        //TODO: rename all the way down to requiredConnections
         final int maxConnections = receiveBundle.getInt("maxConnections", DEFAULT_MAX_CONNECTIONS);
 
         mUpdates = (TextView) findViewById(R.id.updates);
