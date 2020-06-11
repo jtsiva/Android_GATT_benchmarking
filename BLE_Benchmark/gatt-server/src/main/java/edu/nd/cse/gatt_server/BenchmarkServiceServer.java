@@ -36,9 +36,8 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
 
     private GattServer mGattServer;
     private BenchmarkServiceServerCallback mCB;
-    private ArrayList<String> mClientList = new ArrayList<String>();
 
-    private int mSentMeasurements = 0;
+    private Map<String, int> mSentMeasurements = new HashMap<String, int>();
 
 
     /**
@@ -55,30 +54,33 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
 
         mGattServer = new GattServer (context, createBenchmarkService());
         mGattServer.setCharacteristicHandler(this);
-        mGattServer.setConnectionUpdateCallback(new ConnectionUpdater (){
-            public void commMethodUpdate(int commMethod) {mCommMethod = commMethod; }
+        mGattServer.setConnectionUpdateCallback(this);
 
-            public void mtuUpdate(int mtu) {
-                mMtu = mtu;
+    }
+
+    @Override
+    public void commMethodUpdate(int commMethod) {mCommMethod = commMethod; }
+
+    @Override
+    public void mtuUpdate(int mtu) {
+        mMtu = mtu;
+    }
+
+    @Override
+    public void connIntervalUpdate (int interval){
+        mConnInterval = interval;
+    }
+
+    @Override
+    public void connectionUpdate (String address, int state){
+        super(address, state);
+
+        if (0 == state) {
+            if (mConnections.isEmpty()){
+                mCB.onBenchmarkComplete();
             }
 
-            public void connIntervalUpdate (int interval){
-                mConnInterval = interval;
-            }
-
-            public void connectionUpdate (String address, int state){
-                if (0 == state) {
-                    mClientList.remove(address);
-                    if (mClientList.isEmpty()){
-                        mCB.onBenchmarkComplete();
-                    }
-
-                } else {
-                    mClientList.add(address);
-                }
-            }
-        });
-
+        }
     }
 
 
@@ -232,9 +234,13 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
             index = mLatencyIndex.get(new Key(RECEIVER_LATENCY, data.mAddress));
         }
 
-        if (mSentMeasurements < index) {
-            returnVal = mLatency.get(new Key(OP_LATENCY, data.mAddress)[mSentMeasurements];
-            ++mSentMeasurements;
+        if (null == mSentMeasurements.get(mAddress)) {
+            mSentMeasurements.put(mAddress, 0);
+        }
+
+        if (mSentMeasurements.get(mAddress) < index) {
+            returnVal = mLatency.get(new Key(OP_LATENCY, data.mAddress)[mSentMeasurements.get(mAddress)];
+            mSentMeasurements.put(mAddress, mSentMeasurements.get(mAddress) + 1);
         } else {
             mCB.onBenchmarkComplete();
         }

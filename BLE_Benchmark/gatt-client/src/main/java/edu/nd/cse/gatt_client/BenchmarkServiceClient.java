@@ -42,7 +42,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
 
     private GattClient mGattClient;
     private BenchmarkServiceClientCallback mCB;
-    private String mServerAddress = null;
+    private final int SERVER = 0; //assuming only a single connection
 
 
     private Handler mPrepHandler = new Handler();
@@ -141,7 +141,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
                     //to start the server-side sending using notify, we send the duration
                     //of the benchmark in bytes
                     mGattClient.handleCharacteristic(
-                            new GattData(mServerAddress,
+                            new GattData(mConnections.get(SERVER),
                             BenchmarkService.TEST_CHAR,
                             ByteBuffer.allocate(Long.BYTES).putLong(mBenchmarkDuration).array()));
                 } else {
@@ -190,26 +190,14 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
 
     }
 
-    /**
-     * Request the throughput fom the benchmark. Calling this during the
-     * test will affect the results.
-     */
-    public void requestThroughput () {
-        Log.d(TAG, "Requesting throughput");
-        long bps = 0;
-        int lastIndex = mServerLatencyIndex - 1 ;
-        if (0 <= lastIndex) {
-            bps = (mBenchmarkBytesSent * 8 * 1000000000) / mServerLatency[lastIndex];
-        }
-        mCB.onThroughputAvailable(bps);
-    }
+
 
     /**
      * Request the latency measurements from the server
      *
      */
     public void requestLatencyMeasurements () {
-        mGattClient.handleCharacteristic(new GattData(mServerAddress,
+        mGattClient.handleCharacteristic(new GattData(mConnections.get(SERVER),
                 BenchmarkService.LATENCY_CHAR,
                 null));
     }
@@ -218,7 +206,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
      * Request the server's ID (useful for data logging)
      */
     public void requestServerID () {
-        mGattClient.handleCharacteristic(new GattData(mServerAddress,
+        mGattClient.handleCharacteristic(new GattData(mConnections.get(SERVER),
                 BenchmarkService.ID_CHAR,
                 null));
     }
@@ -282,7 +270,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
      */
     private void setMtu (int mtu) {
         mMtuState = false; //unsure if okay right now
-        mGattClient.mtuUpdate(mServerAddress, mtu);
+        mGattClient.mtuUpdate(mConnections.get(SERVER), mtu);
 
     }
 
@@ -294,7 +282,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
      */
     private void setConnInterval (int connInterval) {
         mConnIntervalState = false; //unsure if okay right now
-        mGattClient.connIntervalUpdate(mServerAddress, connInterval);
+        mGattClient.connIntervalUpdate(mConnections.get(SERVER), connInterval);
     }
 
 
@@ -321,77 +309,77 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
      */
     private void setCommMethod (int commMethod){
         mCommMethod = commMethod;
-        mGattClient.commMethodUpdate(mServerAddress, commMethod);
+        mGattClient.commMethodUpdate(mConnections.get(SERVER), commMethod);
     }
 
     /**
      * Connection updater callback that is passed to Gatt Client.
      */
-    private ConnectionUpdater mConnUpdater = new ConnectionUpdater (){
-        @Override
-        public void connectionUpdate (String address, int state){
-            if (1 == state){
-                Log.d(TAG, "Connected");
-                mLatencyStartup = SystemClock.elapsedRealtimeNanos () - mStartScanning;
-                mCB.onStartupLatencyAvailable (mLatencyStartup);
 
-                mServerAddress = address;
+    @Override
+    public void connectionUpdate (String address, int state){
+        super(address, state);
 
-                setMtu (mMtu);
+        if (1 == state){
+            Log.d(TAG, "Connected");
+            mLatencyStartup = SystemClock.elapsedRealtimeNanos () - mStartScanning;
+            mCB.onStartupLatencyAvailable (mLatencyStartup);
+
+            setMtu (mMtu);
+        }
+    }
+
+    @Override
+    public void commMethodUpdate(String address, int method){
+        if (method == mCommMethod) {
+            //success
+            Log.d(TAG, "comm method updated!");
+            mCommMethodState = true;
+        }
+        else{
+            //failure
+            mCB.onBenchmarkError(BenchmarkServiceClientCallback.SET_COMM_METHOD_ERROR
+                    , "set comm method to " + mCommMethod + ", but there was an error");
+        }
+    }
+
+    @Override
+    public void mtuUpdate(String address, int mtu){
+        if (0 == mtu) {
+            mCB.onBenchmarkError(BenchmarkServiceClientCallback.SET_MTU_ERROR
+                    , "set MTU to " + mMtu + ", but there was an error");
+        }
+        else {
+            if (mtu == mMtu) {
+                Log.d(TAG, "mtu updated!");
+            } else {
+                Log.i(TAG, "MTU negotiated to: " + mtu);
+                mMtu = mtu;
             }
+
+            mMtuState = true;
         }
 
-        @Override
-        public void commMethodUpdate(String address, int method){
-            if (method == mCommMethod) {
-                //success
-                Log.d(TAG, "comm method updated!");
-                mCommMethodState = true;
-            }
-            else{
-                //failure
-                mCB.onBenchmarkError(BenchmarkServiceClientCallback.SET_COMM_METHOD_ERROR
-                        , "set comm method to " + mCommMethod + ", but there was an error");
-            }
+        setConnInterval(mConnInterval);
+        setDataSize(mDataSize);
+
+    }
+
+    @Override
+    public void connIntervalUpdate (String address, int interval){
+        if (interval != mConnInterval) {
+            mCB.onBenchmarkError(BenchmarkServiceClientCallback.SET_CONN_INTERVAL_ERROR
+                    , "set connInterval to " + mConnInterval
+                            + ", but there was an error");
+        }
+        else {
+            Log.d(TAG, "Connection interval updated");
+            mConnIntervalState = true;
         }
 
-        @Override
-        public void mtuUpdate(String address, int mtu){
-            if (0 == mtu) {
-                mCB.onBenchmarkError(BenchmarkServiceClientCallback.SET_MTU_ERROR
-                        , "set MTU to " + mMtu + ", but there was an error");
-            }
-            else {
-                if (mtu == mMtu) {
-                    Log.d(TAG, "mtu updated!");
-                } else {
-                    Log.i(TAG, "MTU negotiated to: " + mtu);
-                    mMtu = mtu;
-                }
+        setCommMethod(mCommMethod);
+    }
 
-                mMtuState = true;
-            }
-
-            setConnInterval(mConnInterval);
-            setDataSize(mDataSize);
-
-        }
-
-        @Override
-        public void connIntervalUpdate (String address, int interval){
-            if (interval != mConnInterval) {
-                mCB.onBenchmarkError(BenchmarkServiceClientCallback.SET_CONN_INTERVAL_ERROR
-                        , "set connInterval to " + mConnInterval
-                                + ", but there was an error");
-            }
-            else {
-                Log.d(TAG, "Connection interval updated");
-                mConnIntervalState = true;
-            }
-
-            setCommMethod(mCommMethod);
-        }
-    };
 
 
 }

@@ -11,10 +11,12 @@ import java.util.Random;
 import java.util.List;
 import java.util.ArrayList;
 
-public class BenchmarkServiceBase extends BenchmarkService implements Runnable {
+public class BenchmarkServiceBase extends BenchmarkService implements Runnable, ConnectionUpdaterIFace {
+
     private static final String TAG = BenchmarkServiceBase.class.getSimpleName();
 
     protected int mRole = 0;
+    protected List<String> mConnections = new ArrayList<String>();
 
     /* Time recording variables */
     protected final int MAX_RECORDS = 16000;
@@ -82,7 +84,8 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable {
         }
         byte [] b = new byte[packetSize];
         new Random().nextBytes(b);
-        GattData data = new GattData(mServerAddress, BenchmarkService.TEST_CHAR, b);
+        //TODO: multi-connection send policy
+        GattData data = null; //new GattData(mServerAddress, BenchmarkService.TEST_CHAR, b);
         mBenchmarkBytesSent += packetSize;
 
         this.handleTestCharSend(data);
@@ -200,7 +203,8 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable {
      * @return true if the timer has been started, false otherwise
      */
     protected boolean timerStarted(int timeType, String address) {
-        return !(0 == mStartTS.get(new Key(timeType, address)));
+        return !(0 == mStartTS.get(new Key(timeType, address))
+                || null == mStartTS.get(new Key(timeType, address)) );
     }
 
     /**
@@ -253,5 +257,33 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable {
         mLatencyIndex.put(new Key(timeType, address), mLatencyIndex.get(new Key(timeType, address)) + 1);
     }
 
+    /******************************************************************************************
+    ConnectionUpdater IFace implementation
+     ******************************************************************************************/
+    public void commMethodUpdate(String address, int method){
+        //do nothing
+    }
+
+    public void mtuUpdate(String address, int mtu){
+        //do nothing
+    }
+
+    public void connIntervalUpdate (String address, int interval){
+        //do nothing
+    }
+
+    /**
+     * Add and remove connected devices from list
+     *
+     * @param address - address of device
+     * @param state - new state of device
+     */
+    public void connectionUpdate (String address, int state){
+        if (1 == state) {
+            mConnections.add(address);
+        } else {
+            mConnections.remove(address);
+        }
+    }
 
 }
