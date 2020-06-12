@@ -21,6 +21,12 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
     protected List<String> mConnections = new ArrayList<String>();
     protected BenchmarkServiceCallback mCB = null;
 
+    /* Multi-connection transmit policy */
+    private static final int MAX_PACKETS_BUFFERED = 2;
+    private int mCurrentConnection = 0;
+    private int mPacketsBuffered = 0;
+
+
     /* Time recording variables */
     protected final int MAX_RECORDS = 16000;
     protected final int SENDER_LATENCY = 0;
@@ -91,8 +97,22 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
         byte [] b = new byte[packetSize];
         new Random().nextBytes(b);
         //TODO: multi-connection send policy
-        GattData data = null; //new GattData(mServerAddress, BenchmarkService.TEST_CHAR, b);
-        mBenchmarkBytesSent += packetSize;
+
+        if (mPacketsBuffered == MAX_PACKETS_BUFFERED) {
+            //once we've buffered a sufficient number of packets for this connection
+            //move onto the next connection
+            mCurrentConnection = (mCurrentConnection > mConnections.size() - 1) ? 0 : mCurrentConnection + 1;
+            mPacketsBuffered = 0;
+        }
+
+        GattData data = new GattData(mConnections.get(mCurrentConnection), BenchmarkService.TEST_CHAR, b);
+        ++mPacketsBuffered;
+
+        //only mark the bytes sent when we are buffering for the final connection
+        if (mCurrentConnection == mConnections.size() - 1){
+            mBenchmarkBytesSent += packetSize;
+        }
+
 
         this.handleTestCharSend(data);
 
