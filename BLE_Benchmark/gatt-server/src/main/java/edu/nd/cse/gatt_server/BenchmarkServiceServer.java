@@ -51,9 +51,8 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
      * @param cb - callback for communicating with upper layers
      */
     public BenchmarkServiceServer(Context context,
-                                  BenchmarkServiceServerCallback cb,
-                                  int requiredConnections){
-        super(BenchmarkService.SERVER, requiredConnections);
+                                  BenchmarkServiceServerCallback cb){
+        super(BenchmarkService.SERVER);
 
         mCB = cb;
 

@@ -58,8 +58,9 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
      * @param context - the application context
      * @param cb - callback defined by the application to handle interactions
      */
-    public BenchmarkServiceClient(Context context, BenchmarkServiceClientCallback cb) {
-        super(BenchmarkService.CLIENT, MAX_SERVERS);
+    public BenchmarkServiceClient(Context context,
+                                  BenchmarkServiceClientCallback cb) {
+        super(BenchmarkService.CLIENT);
         mGattClient = new GattClient(context, BenchmarkService.BENCHMARK_SERVICE,
                                         this, this);
         mCB = cb;
@@ -72,7 +73,9 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
      * Set up the connection with default testing values.
      */
     public void prepare() {
-        this.prepare(mMtu, mConnInterval, mDataSize, mCommMethod);
+        this.prepare(BenchmarkService.DEFAULT_MTU, BenchmarkService.DEFAULT_CONN_INTERVAL,
+                BenchmarkService.DEFAULT_DATA_SIZE, BenchmarkService.DEFAULT_COMM_METHOD,
+                BenchmarkService.DEFAULT_REQUIRED_CONNECTIONS, BenchmarkService.DEFAULT_TARGET_PPCE);
     }
 
     /**
@@ -81,8 +84,13 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
      * @param mtu - the maximum transmission unit to be used by LL.
      * @param interval - the connection interval to be used.
      * @param dataSize - the amount of data to send in each packet.
+     * @param requiredConnections - the number of connections to establish
+     *                           before starting the benchmark
+     * @param targetPPCE - the number of packets we want to try to send each CE
      */
-    public void prepare(int mtu, int interval, int dataSize, int commMethod){
+    public void prepare(int mtu, int interval, int dataSize,
+                        int commMethod, int requiredConnections, int targetPPCE){
+        super.prepare(MAX_SERVERS, targetPPCE);
         Log.d(TAG, "preparing...");
         mStartScanning = SystemClock.elapsedRealtimeNanos ();
         mGattClient.start(); // will scan and connect to first device

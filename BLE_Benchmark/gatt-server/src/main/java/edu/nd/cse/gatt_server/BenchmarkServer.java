@@ -14,6 +14,7 @@ import android.os.Handler;
 import java.util.Date;
 import java.sql.Timestamp;
 
+import edu.nd.cse.benchmarkcommon.BenchmarkService;
 import edu.nd.cse.benchmarkcommon.BluetoothRestarter;
 
 /**
@@ -23,7 +24,6 @@ import edu.nd.cse.benchmarkcommon.BluetoothRestarter;
 public class BenchmarkServer extends Activity{
 
     private static final String TAG = BenchmarkServer.class.getSimpleName();
-    private final int DEFAULT_REQ_CONNECTIONS = 1;
 
     private BluetoothRestarter mBTRestarter = new BluetoothRestarter(this);
 
@@ -138,11 +138,17 @@ public class BenchmarkServer extends Activity{
             receiveBundle = new Bundle();
         }
 
-        final int requiredConnections = receiveBundle.getInt("requiredConnections", DEFAULT_REQ_CONNECTIONS);
+        final int requiredConnections = receiveBundle.getInt("requiredConnections",
+                BenchmarkService.DEFAULT_REQUIRED_CONNECTIONS);
+        final int targetPPCE = receiveBundle.getInt("targetPPCE",
+                BenchmarkService.DEFAULT_TARGET_PPCE);
 
         mUpdates = (TextView) findViewById(R.id.updates);
         writeUpdate("Parameters:\n");
         //Here we would append a text version of all of the parameters
+        writeUpdate("\tTarget PPCE: " + String.valueOf(targetPPCE));
+        writeUpdate("\tRequired Connections: " + String.valueOf(requiredConnections));
+        writeUpdate("----------------------------");
 
         // Devices with a display should not go to sleep
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -181,9 +187,10 @@ public class BenchmarkServer extends Activity{
                 writeUpdate("Error " + code + ": " + details);
 
             }
-        }, requiredConnections);
+        });
 
         Log.i(TAG, "Starting benchmark server...");
+        mBenchmarkServer.prepare(requiredConnections, targetPPCE);
         mBenchmarkServer.start();
     }
 

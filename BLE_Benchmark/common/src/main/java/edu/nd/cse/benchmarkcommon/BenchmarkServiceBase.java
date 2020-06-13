@@ -22,9 +22,10 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
     protected BenchmarkServiceCallback mCB = null;
 
     /* Multi-connection transmit policy */
-    private static final int MAX_PACKETS_BUFFERED = 2;
+    private static final int MAX_PACKETS_BUFFERED = 64;
     private int mCurrentConnection = 0;
     private int mPacketsBuffered = 0;
+    private int mTargetPPCE = MAX_PACKETS_BUFFERED;
 
 
     /* Time recording variables */
@@ -69,9 +70,21 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
     protected int mCommMethod = BenchmarkService.WRITE_REQ;
     protected boolean mCommMethodState;
 
-    public BenchmarkServiceBase (int role, int requiredConnections){
+    public BenchmarkServiceBase (int role){
         mRole = role;
+    }
+
+    /**
+     * Prepare the benchmark with some parameters that are relevant for both
+     * client and server
+     *
+     * @param requiredConnections - the number of connections to establish
+     *                            before starting the benchmark
+     * @param targetPPCE - the number of packets we want to try to send each CE
+     */
+    public void prepare(int requiredConnections, int targetPPCE){
         mRequiredConnections = requiredConnections;
+        mTargetPPCE = targetPPCE;
     }
 
 
@@ -98,7 +111,7 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
         new Random().nextBytes(b);
         //TODO: multi-connection send policy
 
-        if (mPacketsBuffered == MAX_PACKETS_BUFFERED) {
+        if (mPacketsBuffered == mTargetPPCE) {
             //once we've buffered a sufficient number of packets for this connection
             //move onto the next connection
             mCurrentConnection = (mCurrentConnection > mConnections.size() - 1) ? 0 : mCurrentConnection + 1;

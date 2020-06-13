@@ -38,12 +38,7 @@ public class BenchmarkClient extends Activity{
     private BenchmarkServiceClient mBenchmarkClient;
 
     /* Default parameters */
-    private final int DEFAULT_MTU = 23;
-    private final int DEFAULT_DATA_SIZE = 20;
-    private final int DEFAULT_COMM_METHOD = BenchmarkService.WRITE_REQ;
-    private final int DEFAULT_CONN_INTERVAL = 0;
-    private final int DEFAULT_DURATION = 10000;
-    private final int DEFAULT_DURATION_IS_TIME  = 1;
+
 
     private Thread mWriteStartupLatencyThread = null;
     private Thread mWritePayloadLatencyThread = null;
@@ -277,12 +272,14 @@ public class BenchmarkClient extends Activity{
         if (null == receiveBundle) {
             receiveBundle = new Bundle();
         }
-        final int dataSize = receiveBundle.getInt("dataSize", DEFAULT_DATA_SIZE);
-        final int connInterval = receiveBundle.getInt("connInterval", DEFAULT_CONN_INTERVAL);
-        final int mtu = receiveBundle.getInt("mtu", DEFAULT_MTU);
-        final int duration = receiveBundle.getInt("duration", DEFAULT_DURATION);
-        final int durationIsTime = receiveBundle.getInt("durationIsTime", DEFAULT_DURATION_IS_TIME);
-        final int commMethod = receiveBundle.getInt("commMethod", DEFAULT_COMM_METHOD);
+        final int dataSize = receiveBundle.getInt("dataSize", BenchmarkService.DEFAULT_DATA_SIZE);
+        final int connInterval = receiveBundle.getInt("connInterval", BenchmarkService.DEFAULT_CONN_INTERVAL);
+        final int mtu = receiveBundle.getInt("mtu", BenchmarkService.DEFAULT_MTU);
+        final int duration = receiveBundle.getInt("duration", BenchmarkService.DEFAULT_DURATION);
+        final int durationIsTime = receiveBundle.getInt("durationIsTime", BenchmarkService.DEFAULT_DURATION_IS_TIME);
+        final int commMethod = receiveBundle.getInt("commMethod", BenchmarkService.DEFAULT_COMM_METHOD);
+        final int requiredConnections = receiveBundle.getInt("reqConnections", BenchmarkService.DEFAULT_REQUIRED_CONNECTIONS);
+        final int targetPPCE = receiveBundle.getInt("targetPPCE", BenchmarkService.DEFAULT_TARGET_PPCE);
 
 
         mUpdates = (TextView) findViewById(R.id.updates);
@@ -293,6 +290,8 @@ public class BenchmarkClient extends Activity{
         writeUpdate("\tMTU: " + String.valueOf(mtu));
         writeUpdate("\tData Size: " + String.valueOf(dataSize));
         writeUpdate("\tConn Interval: " + String.valueOf(connInterval));
+        writeUpdate("\tTarget PPCE: " + String.valueOf(targetPPCE));
+        writeUpdate("\tRequired Connections: " + String.valueOf(requiredConnections));
         writeUpdate("\tDuration: " + String.valueOf(duration) + (1 == durationIsTime? " ms" : " bytes"));
         writeUpdate("\tClient ID: " + Build.DISPLAY);
         writeUpdate("----------------------------");
@@ -389,7 +388,8 @@ public class BenchmarkClient extends Activity{
             }
         });
 
-        mBenchmarkClient.prepare(mtu, connInterval, dataSize, commMethod);
+        mBenchmarkClient.prepare(mtu, connInterval, dataSize,
+                                 commMethod, requiredConnections, targetPPCE);
         mBenchmarkClient.beginBenchmark(duration, 1 == durationIsTime);
     }
 

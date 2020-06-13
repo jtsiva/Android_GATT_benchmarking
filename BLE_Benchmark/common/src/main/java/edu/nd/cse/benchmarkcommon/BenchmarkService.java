@@ -42,10 +42,6 @@ import java.util.UUID;
  * least one other device.
  * */
 public class BenchmarkService {
-
-    protected final int MAX_DIFFS = 1000;
-
-
     public static final UUID BENCHMARK_SERVICE = UUID.fromString("00000001-0000-1000-8000-00805F9B34FB");
 
     //Throughput benchmarking will occur on this characteristic (bytes)
@@ -90,5 +86,13 @@ public class BenchmarkService {
     public static final int BRIDGE = 2;
 
 
-
+    /*Default parameters */
+    public static final int DEFAULT_MTU = 23;
+    public static final int DEFAULT_DATA_SIZE = 20;
+    public static final int DEFAULT_COMM_METHOD = WRITE_REQ;
+    public static final int DEFAULT_CONN_INTERVAL = 0;
+    public static final int DEFAULT_DURATION = 10000;
+    public static final int DEFAULT_DURATION_IS_TIME  = 1;
+    public static final int DEFAULT_REQUIRED_CONNECTIONS = 1;
+    public static final int DEFAULT_TARGET_PPCE = 64;
 }
