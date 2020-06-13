@@ -39,7 +39,6 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
     private final int MAX_CLIENTS = 6; //seems high enough....
 
     private GattServer mGattServer;
-    private BenchmarkServiceServerCallback mCB;
 
     private Map<String, Integer> mSentMeasurements = new HashMap<String, Integer>();
 
@@ -54,6 +53,9 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
                                   BenchmarkServiceServerCallback cb){
         super(BenchmarkService.SERVER);
 
+        if(null == cb) {
+            Log.w(TAG, "NULL callback!");
+        }
         mCB = cb;
 
         mGattServer = new GattServer (context, createBenchmarkService());
@@ -241,19 +243,23 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
     private GattData handleLatencyRequest (GattData data) {
         long returnVal = -1;
         int index = 0;
-
+        Key key = null;
         if (mCommMethod == BenchmarkService.NOTIFY) {
-            index = mLatencyIndex.get(new Key(OP_LATENCY, data.mAddress));
+            key = new Key(OP_LATENCY, data.mAddress);
         } else {
-            index = mLatencyIndex.get(new Key(RECEIVER_LATENCY, data.mAddress));
+            key = new Key(RECEIVER_LATENCY, data.mAddress);
         }
+
+
+        index = mLatencyIndex.get(key);
+
 
         if (null == mSentMeasurements.get(data.mAddress)) {
             mSentMeasurements.put(data.mAddress, 0);
         }
 
         if (mSentMeasurements.get(data.mAddress) < index) {
-            returnVal = mLatency.get(new Key(OP_LATENCY, data.mAddress)).get(mSentMeasurements.get(data.mAddress));
+            returnVal = mLatency.get(key).get(mSentMeasurements.get(data.mAddress));
             mSentMeasurements.put(data.mAddress, mSentMeasurements.get(data.mAddress) + 1);
         } else {
             mCB.onBenchmarkComplete();

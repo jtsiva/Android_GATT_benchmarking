@@ -114,7 +114,7 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
         if (mPacketsBuffered == mTargetPPCE) {
             //once we've buffered a sufficient number of packets for this connection
             //move onto the next connection
-            mCurrentConnection = (mCurrentConnection > mConnections.size() - 1) ? 0 : mCurrentConnection + 1;
+            mCurrentConnection = (mCurrentConnection + 1) % mConnections.size();
             mPacketsBuffered = 0;
         }
 
@@ -242,8 +242,7 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
      * @return true if the timer has been started, false otherwise
      */
     protected boolean timerStarted(int timeType, String address) {
-        return !(0 == mStartTS.get(new Key(timeType, address))
-                || null == mStartTS.get(new Key(timeType, address)) );
+        return !(null == mStartTS.get(new Key(timeType, address)) );
     }
 
     /**
@@ -280,6 +279,10 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
      * @param address - the address of the device for this connection
      */
     protected void recordTime(int timeType, String address ) {
+        if (null == mLatency.get(new Key(timeType, address))) {
+            mLatency.put(new Key(timeType, address), new ArrayList<Long> ());
+            mLatencyIndex.put(new Key(timeType, address), 0);
+        }
         mLatency.get(new Key(timeType, address)).add(SystemClock.elapsedRealtimeNanos());
         mLatencyIndex.put(new Key(timeType, address), mLatencyIndex.get(new Key(timeType, address)) + 1);
     }
@@ -292,6 +295,11 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
      * @param time - time to record
      */
     protected void recordTime(int timeType, String address, long time) {
+        if (null == mLatency.get(new Key(timeType, address))) {
+            mLatency.put(new Key(timeType, address), new ArrayList<Long> ());
+            mLatencyIndex.put(new Key(timeType, address), 0);
+
+        }
         mLatency.get(new Key(timeType, address)).add(time);
         mLatencyIndex.put(new Key(timeType, address), mLatencyIndex.get(new Key(timeType, address)) + 1);
     }

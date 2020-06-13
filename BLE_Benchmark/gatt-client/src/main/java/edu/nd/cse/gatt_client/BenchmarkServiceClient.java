@@ -45,7 +45,6 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
     private static final int MAX_SERVERS = 1;
 
     private GattClient mGattClient;
-    private BenchmarkServiceClientCallback mCB;
     private final int SERVER = 0; //assuming only a single connection
 
 
@@ -243,6 +242,8 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
                     //if we *are* using notify then this latency is the op latency
                     recordTime(OP_LATENCY, data.mAddress, measurement);
                 }
+
+                requestLatencyMeasurements();
             } else {
                 //we're done, so pass the completed data up to the next layer
 
@@ -261,7 +262,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
                 }
 
 
-                mCB.onLatencyMeasurementsAvailable(opLatency, receiverLatency);
+                ((BenchmarkServiceClientCallback)mCB).onLatencyMeasurementsAvailable(opLatency, receiverLatency);
             }
         }else if(BenchmarkService.TEST_CHAR.equals(data.mCharID)
                 && BenchmarkService.NOTIFY != mCommMethod){
@@ -278,7 +279,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
             handleTestCharReceive(data);
 
         }else if(BenchmarkService.ID_CHAR.equals(data.mCharID)){
-            mCB.onServerIDAvailable(new String(data.mBuffer));
+            ((BenchmarkServiceClientCallback)mCB).onServerIDAvailable(new String(data.mBuffer));
         } else{ //we can't handle this so return null
             data = null;
         }
@@ -347,7 +348,7 @@ public class BenchmarkServiceClient extends BenchmarkServiceBase implements Char
         if (1 == state){
             Log.d(TAG, "Connected");
             mLatencyStartup = SystemClock.elapsedRealtimeNanos () - mStartScanning;
-            mCB.onStartupLatencyAvailable (mLatencyStartup);
+            ((BenchmarkServiceClientCallback)mCB).onStartupLatencyAvailable (mLatencyStartup);
 
             setMtu (mMtu);
         }
