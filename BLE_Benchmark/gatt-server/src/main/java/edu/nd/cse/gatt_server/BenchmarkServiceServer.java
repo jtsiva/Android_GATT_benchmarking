@@ -41,6 +41,7 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
     private GattServer mGattServer;
 
     private Map<String, Integer> mSentMeasurements = new HashMap<String, Integer>();
+    private int mBenchmarkConnectionComplete = 0;
 
 
     /**
@@ -262,6 +263,10 @@ public class BenchmarkServiceServer extends BenchmarkServiceBase
             returnVal = mLatency.get(key).get(mSentMeasurements.get(data.mAddress));
             mSentMeasurements.put(data.mAddress, mSentMeasurements.get(data.mAddress) + 1);
         } else {
+            ++mBenchmarkConnectionComplete;
+        }
+
+        if (mRequiredConnections == mBenchmarkConnectionComplete) {
             mCB.onBenchmarkComplete();
         }
 

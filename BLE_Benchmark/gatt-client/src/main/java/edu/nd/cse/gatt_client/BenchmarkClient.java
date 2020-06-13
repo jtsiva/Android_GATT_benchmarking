@@ -278,7 +278,7 @@ public class BenchmarkClient extends Activity{
         final int duration = receiveBundle.getInt("duration", BenchmarkService.DEFAULT_DURATION);
         final int durationIsTime = receiveBundle.getInt("durationIsTime", BenchmarkService.DEFAULT_DURATION_IS_TIME);
         final int commMethod = receiveBundle.getInt("commMethod", BenchmarkService.DEFAULT_COMM_METHOD);
-        final int requiredConnections = receiveBundle.getInt("reqConnections", BenchmarkService.DEFAULT_REQUIRED_CONNECTIONS);
+        final int requiredConnections = receiveBundle.getInt("requiredConnections", BenchmarkService.DEFAULT_REQUIRED_CONNECTIONS);
         final int targetPPCE = receiveBundle.getInt("targetPPCE", BenchmarkService.DEFAULT_TARGET_PPCE);
 
 

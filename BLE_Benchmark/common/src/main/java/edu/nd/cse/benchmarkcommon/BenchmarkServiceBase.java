@@ -109,7 +109,6 @@ public class BenchmarkServiceBase extends BenchmarkService implements Runnable, 
         }
         byte [] b = new byte[packetSize];
         new Random().nextBytes(b);
-        //TODO: multi-connection send policy
 
         if (mPacketsBuffered == mTargetPPCE) {
             //once we've buffered a sufficient number of packets for this connection
