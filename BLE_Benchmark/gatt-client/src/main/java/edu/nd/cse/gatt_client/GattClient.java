@@ -29,6 +29,9 @@ import android.os.ParcelUuid;
 import android.os.SystemClock;
 import android.util.Log;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -54,10 +57,12 @@ public class GattClient extends BluetoothGattCallback
     private BluetoothLeScanner mBluetoothLeScanner;
     private Map<String, BluetoothGatt> mConnectedDevices = new HashMap<String, BluetoothGatt>();
     private final BlockingQueue<GattData> mOperationQueue = new LinkedBlockingQueue<GattData>(32);
-    private boolean mIsIdle = true;
+    private volatile boolean mIsIdle = true;
     private UiUpdate mUiUpdate = null;
     private CharacteristicHandler mCharHandler = null;
     private ConnectionUpdaterIFace mConnUpdater = null;
+
+    private Handler mBleHandler = new Handler(Looper.getMainLooper());
 
     private int mCommMethod;
 
@@ -145,7 +150,7 @@ public class GattClient extends BluetoothGattCallback
     public GattData handleCharacteristic(GattData data) {
         if (null != data) {
             if (null == data.mBuffer) {
-                //Log.d (TAG, "Adding read request to op queue");
+                Log.d (TAG, "Adding read request to op queue");
             }
             try{
                 mOperationQueue.put(data); //blocking if full
@@ -301,10 +306,11 @@ public class GattClient extends BluetoothGattCallback
      * Initiate connection with device
      * @param device - gatt device to which a connection will be started
      */
-    private void connect(BluetoothDevice device) {
+    private void connect(final BluetoothDevice device) {
         Log.d(TAG, "connecting...");
         mConnecting = true;
         device.connectGatt(mContext, false, this, BluetoothDevice.TRANSPORT_LE);
+
     }
 
     /**
@@ -312,19 +318,49 @@ public class GattClient extends BluetoothGattCallback
      *
      * @param data - collection of information needed to perform operation
      */
-    private void performOperation (GattData data) {
+    private void performOperation (final GattData data) {
         BluetoothGattService service = mConnectedDevices.get(data.mAddress).getService(mTargetService);
-        BluetoothGattCharacteristic characteristic = service.getCharacteristic(data.mCharID);
+        final BluetoothGattCharacteristic characteristic = service.getCharacteristic(data.mCharID);
+
+        boolean res;
 
         if (null == data.mBuffer) { //read
-            //Log.d(TAG, "Characteristic READ");
-            mConnectedDevices.get(data.mAddress).readCharacteristic(characteristic);
+            Log.d(TAG, "Reading characteristic " + data.mCharID);
+            res = mConnectedDevices.get(data.mAddress).readCharacteristic(characteristic);
         }
         else { //write
+            Log.d(TAG, "Writing characteristic " + data.mCharID);
             mOpInit = SystemClock.elapsedRealtimeNanos ();
             characteristic.setValue(data.mBuffer);
-            mConnectedDevices.get(data.mAddress).writeCharacteristic(characteristic);
+            res = mConnectedDevices.get(data.mAddress).writeCharacteristic(characteristic);
         }
+
+        if (res){
+            //Log.d(TAG, "okay");
+        } else {
+            Log.w(TAG, "GATT operation failed before starting. Op still in progress?");
+        }
+
+    }
+
+    /**
+     * Convenience function to check if there is a new piece of data to request/send
+     * TODO: decide whether threading is necessary
+     */
+    private void nextOperation(){
+//        mBleHandler.post(new Runnable() {
+//            @Override
+//            public void run() {
+                GattData data = mOperationQueue.poll();
+
+                if (null == data) { //empty!
+                    Log.d(TAG, "Queue empty!");
+                    mIsIdle = true;
+                } else {
+                    performOperation(data);
+                }
+//            }
+//        });
     }
 
     /*************************************************************************/
@@ -557,13 +593,7 @@ public class GattClient extends BluetoothGattCallback
             Log.e(TAG,"Characteristic write FAILED");
         }
 
-        GattData data = mOperationQueue.poll();
-
-        if (null == data) { //empty!
-            mIsIdle = true;
-        } else {
-            performOperation(data);
-        }
+        nextOperation();
 
     }
 
@@ -578,9 +608,12 @@ public class GattClient extends BluetoothGattCallback
      */
     @Override
     public void onCharacteristicRead (BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
-        //super.onCharacteristicRead(gatt, characteristic, status);
+        super.onCharacteristicRead(gatt, characteristic, status);
+
+        //Log.d(TAG, "Done reading characteristic: " + characteristic.getUuid().toString());
 
         if (status == BluetoothGatt.GATT_SUCCESS) {
+            //Log.d(TAG, "Success reading characteristic: " + characteristic.getUuid().toString());
             mCharHandler.handleCharacteristic(new GattData(gatt.getDevice().getAddress(),
                                                             characteristic.getUuid(),
                                                             characteristic.getValue()));
@@ -589,13 +622,7 @@ public class GattClient extends BluetoothGattCallback
             Log.w(TAG, "Failed reading characteristic " + characteristic.getUuid().toString());
         }
 
-        GattData data = mOperationQueue.poll();
-
-        if (null == data) { //empty!
-            mIsIdle = true;
-        } else {
-            performOperation(data);
-        }
+       nextOperation();
     }
 
     /**
